@@ -60,3 +60,38 @@ export async function updateCollection<T>(
   }
   throw lastError ?? new Error(`Failed to update collection "${name}" after retries`);
 }
+
+/** Reads a singleton JSON document (not an array). Returns `fallback` if it does not exist yet. */
+export async function readSingleton<T>(name: string, fallback: T): Promise<T> {
+  const res = await getObjectText(collectionKey(name));
+  if (!res || !res.body.trim()) return fallback;
+  return JSON.parse(res.body) as T;
+}
+
+/** Safe read-modify-write for a singleton document, same ETag-guarded retry as updateCollection. */
+export async function updateSingleton<T>(
+  name: string,
+  fallback: T,
+  mutate: (current: T) => T | Promise<T>
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const res = await getObjectText(collectionKey(name));
+    const current = res && res.body.trim() ? (JSON.parse(res.body) as T) : fallback;
+    const next = await mutate(current);
+    try {
+      await putObjectText(collectionKey(name), JSON.stringify(next, null, 2), {
+        ifMatchEtag: res?.etag,
+        ifNoneExists: !res,
+      });
+      return next;
+    } catch (err) {
+      if (err instanceof PreconditionFailedError) {
+        lastError = err;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError ?? new Error(`Failed to update singleton "${name}" after retries`);
+}

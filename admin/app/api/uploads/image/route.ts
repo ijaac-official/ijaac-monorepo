@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_FOLDERS = ["books", "reviewers", "editorial-board"] as const;
+const ALLOWED_FOLDERS = ["books", "reviewers", "editorial-board", "issues"] as const;
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9.\-_]/g, "_").slice(-100);

@@ -7,7 +7,6 @@ import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import { getSubmission } from "@ijaac/data-store";
-import { publicUrl } from "@ijaac/aws";
 import PageHero from "@/components/PageHero";
 
 export const revalidate = 0;
@@ -22,7 +21,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const paper = await getPublishedPaper(params.id);
   if (!paper) return {};
 
-  const pdfUrl = paper.publicFileKey ? publicUrl(paper.publicFileKey) : undefined;
+  const baseUrl = process.env.FRONTEND_URL ?? "";
+  const pdfUrl = `${baseUrl}/article/view/${paper.id}`;
   const publicationDate = (paper.publishedAt ?? paper.submittedAt).slice(0, 10).replace(/-/g, "/");
 
   return {
@@ -33,8 +33,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       citation_author: paper.authors.map((a) => a.name),
       citation_publication_date: publicationDate,
       citation_journal_title: "International Journal of Applied AI & Computing",
-      citation_abstract_html_url: `${process.env.FRONTEND_URL ?? ""}/publications/${paper.id}`,
-      ...(pdfUrl ? { citation_pdf_url: pdfUrl } : {}),
+      citation_abstract_html_url: `${baseUrl}/publications/${paper.id}`,
+      citation_pdf_url: pdfUrl,
       citation_keywords: paper.keywords,
     },
   };
@@ -43,8 +43,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function PublicationDetailPage({ params }: { params: { id: string } }) {
   const paper = await getPublishedPaper(params.id);
   if (!paper) notFound();
-
-  const pdfUrl = paper.publicFileKey ? publicUrl(paper.publicFileKey) : null;
 
   return (
     <>
@@ -56,6 +54,7 @@ export default async function PublicationDetailPage({ params }: { params: { id: 
         {(paper.volume || paper.issueNumber) && (
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Volume {paper.volume}, Issue {paper.issueNumber}
+            {paper.articleNumber ? ` - Article ${paper.articleNumber}` : ""}
           </Typography>
         )}
         <Typography variant="caption" color="text.secondary">
@@ -82,11 +81,15 @@ export default async function PublicationDetailPage({ params }: { params: { id: 
           ))}
         </Stack>
 
-        {pdfUrl && (
-          <Button href={pdfUrl} target="_blank" rel="noopener noreferrer" variant="contained" sx={{ mt: 2 }}>
-            Download Full Text (PDF)
-          </Button>
-        )}
+        <Button
+          href={`/article/view/${paper.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="contained"
+          sx={{ mt: 2 }}
+        >
+          Download Full Text (PDF)
+        </Button>
       </Container>
     </>
   );

@@ -6,3 +6,4 @@ export * from "./collections/editorial-board";
 export * from "./collections/issues";
 export * from "./collections/admin-users";
 export * from "./collections/contact-messages";
+export * from "./collections/settings";

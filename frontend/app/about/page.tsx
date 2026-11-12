@@ -2,6 +2,8 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Link from "next/link";
 import PageHero from "@/components/PageHero";
 
 export const metadata = { title: "About - IJAAC Journal" };
@@ -62,6 +64,25 @@ export default function AboutPage() {
               <Typography variant="body2">
                 <b>Languages:</b> English
               </Typography>
+            </Paper>
+
+            <Paper variant="outlined" sx={{ p: 3, mt: 3 }}>
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                Policies &amp; Ethics
+              </Typography>
+              <Stack spacing={1}>
+                {[
+                  ["Publication Ethics & Copyright", "/publication-ethics"],
+                  ["Privacy Policy", "/privacy-policy"],
+                  ["Terms & Conditions", "/terms-and-conditions"],
+                  ["Refund & Cancellation Policy", "/refund-policy"],
+                  ["Author Guidelines", "/author-guidelines"],
+                ].map(([label, href]) => (
+                  <Link key={href} href={href} style={{ color: "inherit" }}>
+                    <Typography variant="body2">{label}</Typography>
+                  </Link>
+                ))}
+              </Stack>
             </Paper>
           </Grid>
         </Grid>

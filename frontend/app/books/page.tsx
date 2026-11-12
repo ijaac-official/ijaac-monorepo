@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import { listBooks } from "@ijaac/data-store";
 import BookCard from "@/components/BookCard";
 import PageHero from "@/components/PageHero";
+import MotionCard from "@/components/MotionCard";
 
 export const metadata = { title: "Books - IJAAC Journal" };
 export const revalidate = 0;
@@ -20,9 +21,11 @@ export default async function BooksPage() {
       />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Grid container spacing={3}>
-          {books.map((book) => (
+          {books.map((book, i) => (
             <Grid item xs={12} sm={6} md={4} key={book.id}>
-              <BookCard book={book} />
+              <MotionCard delay={(i % 3) * 0.08}>
+                <BookCard book={book} />
+              </MotionCard>
             </Grid>
           ))}
         </Grid>

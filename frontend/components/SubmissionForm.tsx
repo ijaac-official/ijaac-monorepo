@@ -35,6 +35,7 @@ interface FormValues {
   keywordsInput: string;
   correspondingEmail: string;
   correspondingPhone?: string;
+  couponCode?: string;
   authors: { name: string; email: string; affiliation?: string; isCorresponding?: boolean }[];
 }
 
@@ -115,6 +116,30 @@ export default function SubmissionForm() {
     }
 
     setStatus("submitting");
+
+    const couponCode = values.couponCode?.trim();
+    if (couponCode) {
+      try {
+        const formData = new FormData();
+        formData.append("payload", JSON.stringify(parsed.data));
+        formData.append("couponCode", couponCode);
+        formData.append("file", file);
+
+        const res = await fetch("/api/submissions", { method: "POST", body: formData });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error ?? "Submission failed");
+        }
+        setStatus("success");
+        reset();
+        setFile(null);
+      } catch (err) {
+        setStatus("error");
+        setServerError(err instanceof Error ? err.message : "Submission failed");
+      }
+      return;
+    }
+
     try {
       const orderRes = await fetch("/api/payment/create-order", { method: "POST" });
       if (!orderRes.ok) {
@@ -302,9 +327,16 @@ export default function SubmissionForm() {
           </Typography>
         </Paper>
 
+        <TextField
+          label="Coupon Code (optional)"
+          {...register("couponCode")}
+          helperText="Have a promo code? Enter it to waive the submission fee."
+          fullWidth
+        />
+
         <Typography variant="body2" color="text.secondary">
-          A one-time submission fee applies. You will be redirected to a secure Razorpay checkout
-          before your manuscript is uploaded.
+          A one-time submission fee applies unless a valid coupon is entered above. You will be
+          redirected to a secure Razorpay checkout before your manuscript is uploaded.
         </Typography>
 
         <Button

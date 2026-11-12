@@ -51,11 +51,13 @@ export interface Submission {
   /** Public S3 key for the final version, set when published - used for Google Scholar indexing */
   publicFileKey?: string;
   publishedAt?: string;
+  /** Sequential internal identifier assigned at publish time, e.g. "e008" - not a DOI */
+  articleNumber?: string;
 
   decidedById?: string;
   decidedAt?: string;
 
-  /** Razorpay checkout fee paid at submission time */
+  /** Razorpay checkout fee paid at submission time - absent if waived via coupon */
   payment?: {
     orderId: string;
     paymentId: string;
@@ -63,6 +65,8 @@ export interface Submission {
     currency: string;
     paidAt: string;
   };
+  /** Set when the submission fee was waived via an early-bird coupon */
+  couponCode?: string;
 
   submittedAt: string;
   updatedAt: string;
@@ -91,6 +95,8 @@ export interface Issue {
   number: string;
   year: number;
   title?: string;
+  description?: string;
+  coverImageUrl?: string;
   publishDate?: string;
   isCurrent: boolean;
   createdAt: string;
@@ -151,6 +157,16 @@ export interface EditorialBoardMember {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PlatformSettings {
+  earlyBirdEnabled: boolean;
+  earlyBirdCouponCode: string;
+}
+
+export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  earlyBirdEnabled: false,
+  earlyBirdCouponCode: "EARLYBIRD",
+};
 
 export interface ContactMessage {
   id: string;

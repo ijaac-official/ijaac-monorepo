@@ -10,8 +10,14 @@ const theme = createTheme({
     background: { default: "#f4f6f8", paper: "#ffffff" },
   },
   typography: {
-    fontFamily: ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
-    button: { fontWeight: 600, textTransform: "none" },
+    fontFamily: ["var(--font-body)", "Inter", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
+    h1: { fontFamily: "var(--font-heading)" },
+    h2: { fontFamily: "var(--font-heading)" },
+    h3: { fontFamily: "var(--font-heading)" },
+    h4: { fontFamily: "var(--font-heading)" },
+    h5: { fontFamily: "var(--font-heading)", fontWeight: 600 },
+    h6: { fontFamily: "var(--font-heading)", fontWeight: 600 },
+    button: { fontWeight: 600, textTransform: "none", fontFamily: "var(--font-heading)" },
   },
   shape: { borderRadius: 0 },
   components: {

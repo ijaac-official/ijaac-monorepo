@@ -5,6 +5,7 @@ import { listEditorialBoard } from "@ijaac/data-store";
 import type { EditorialBoardMember } from "@ijaac/shared";
 import PersonCard from "@/components/PersonCard";
 import PageHero from "@/components/PageHero";
+import MotionCard from "@/components/MotionCard";
 
 export const metadata = { title: "Editorial Board - IJAAC Journal" };
 export const revalidate = 0;
@@ -39,17 +40,19 @@ export default async function EditorialBoardPage() {
                   {label}
                 </Typography>
               </Grid>
-              {grouped[role].map((m) => (
+              {grouped[role].map((m, i) => (
                 <Grid item xs={12} sm={6} md={4} key={m.id}>
-                  <PersonCard
-                    name={m.name}
-                    designation={m.designation}
-                    affiliation={m.affiliation}
-                    country={m.country}
-                    photoUrl={m.photoUrl}
-                    bio={m.bio}
-                    linkedinUrl={m.linkedinUrl}
-                  />
+                  <MotionCard delay={(i % 3) * 0.08}>
+                    <PersonCard
+                      name={m.name}
+                      designation={m.designation}
+                      affiliation={m.affiliation}
+                      country={m.country}
+                      photoUrl={m.photoUrl}
+                      bio={m.bio}
+                      linkedinUrl={m.linkedinUrl}
+                    />
+                  </MotionCard>
                 </Grid>
               ))}
             </Grid>

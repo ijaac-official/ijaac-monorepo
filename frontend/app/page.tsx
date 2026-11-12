@@ -20,6 +20,7 @@ import {
 } from "@ijaac/data-store";
 import Carousel from "@/components/Carousel";
 import HeroCarousel from "@/components/HeroCarousel";
+import MotionCard from "@/components/MotionCard";
 
 export const revalidate = 0;
 
@@ -42,13 +43,15 @@ const FEATURES = [
 ];
 
 export default async function HomePage() {
-  const [currentIssue, monthlyPublications, publishedCount, reviewers, board] = await Promise.all([
-    getCurrentIssue().catch(() => null),
-    listPublicationsForMonth().catch(() => []),
-    listPublishedPapersPage({ limit: 0 }).then((r) => r.total).catch(() => 0),
-    listReviewers({ activeOnly: true }).catch(() => []),
-    listEditorialBoard({ activeOnly: true }).catch(() => []),
-  ]);
+  const [currentIssue, monthlyPublications, recentPapers, publishedCount, reviewers, board] =
+    await Promise.all([
+      getCurrentIssue().catch(() => null),
+      listPublicationsForMonth().catch(() => []),
+      listPublishedPapersPage({ limit: 6 }).then((r) => r.items).catch(() => []),
+      listPublishedPapersPage({ limit: 0 }).then((r) => r.total).catch(() => 0),
+      listReviewers({ activeOnly: true }).catch(() => []),
+      listEditorialBoard({ activeOnly: true }).catch(() => []),
+    ]);
 
   const monthLabel = new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
@@ -103,63 +106,105 @@ export default async function HomePage() {
               Papers published in {monthLabel}
             </Typography>
             <Carousel>
-              {monthlyPublications.map((paper) => (
-                <Paper
-                  key={paper.id}
-                  component={Link}
-                  href={`/publications/${paper.id}`}
-                  variant="outlined"
-                  sx={{
-                    p: 2.5,
-                    height: 220,
-                    display: "flex",
-                    flexDirection: "column",
-                    textDecoration: "none",
-                    color: "inherit",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    "&:hover": { transform: "translateY(-4px)", boxShadow: 4 },
-                  }}
-                >
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                    {paper.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {paper.authors.map((a) => a.name).join(", ")}
-                  </Typography>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: "auto", gap: 0.5 }}>
-                    {paper.keywords.slice(0, 3).map((kw) => (
-                      <Chip key={kw} label={kw} size="small" />
-                    ))}
-                  </Stack>
-                </Paper>
+              {monthlyPublications.map((paper, i) => (
+                <MotionCard key={paper.id} delay={(i % 4) * 0.08}>
+                  <Paper
+                    component={Link}
+                    href={`/publications/${paper.id}`}
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      height: 220,
+                      display: "flex",
+                      flexDirection: "column",
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                      {paper.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                      {paper.authors.map((a) => a.name).join(", ")}
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: "auto", gap: 0.5 }}>
+                      {paper.keywords.slice(0, 3).map((kw) => (
+                        <Chip key={kw} label={kw} size="small" />
+                      ))}
+                    </Stack>
+                  </Paper>
+                </MotionCard>
               ))}
             </Carousel>
           </Container>
         </Box>
       )}
 
-      <Box sx={{ bgcolor: "background.default", py: 7 }}>
+      {recentPapers.length > 0 && (
+        <Box sx={{ bgcolor: "background.default", py: 6 }}>
+          <Container maxWidth="lg">
+            <Typography variant="h5" fontWeight={600} gutterBottom>
+              Recently Published
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              The latest peer-reviewed papers across all issues
+            </Typography>
+            <Carousel>
+              {recentPapers.map((paper, i) => (
+                <MotionCard key={paper.id} delay={(i % 4) * 0.08}>
+                  <Paper
+                    component={Link}
+                    href={`/publications/${paper.id}`}
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      height: 220,
+                      display: "flex",
+                      flexDirection: "column",
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                      {paper.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                      {paper.authors.map((a) => a.name).join(", ")}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: "auto" }}>
+                      {new Date(paper.publishedAt ?? paper.submittedAt).toLocaleDateString("en-IN", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Typography>
+                  </Paper>
+                </MotionCard>
+              ))}
+            </Carousel>
+            <Button component={Link} href="/publications" sx={{ mt: 3 }}>
+              View All Publications -&gt;
+            </Button>
+          </Container>
+        </Box>
+      )}
+
+      <Box sx={{ bgcolor: "background.paper", py: 7 }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
-            {FEATURES.map((item) => (
+            {FEATURES.map((item, i) => (
               <Grid item xs={12} md={4} key={item.title}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 3.5,
-                    height: "100%",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    "&:hover": { transform: "translateY(-4px)", boxShadow: 4 },
-                  }}
-                >
-                  <Box sx={{ color: "primary.main", mb: 1.5 }}>{item.icon}</Box>
-                  <Typography variant="h6" gutterBottom>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.body}
-                  </Typography>
-                </Paper>
+                <MotionCard delay={i * 0.1}>
+                  <Paper variant="outlined" sx={{ p: 3.5, height: "100%" }}>
+                    <Box sx={{ color: "primary.main", mb: 1.5 }}>{item.icon}</Box>
+                    <Typography variant="h6" gutterBottom>
+                      {item.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {item.body}
+                    </Typography>
+                  </Paper>
+                </MotionCard>
               </Grid>
             ))}
           </Grid>

@@ -43,3 +43,19 @@ export async function setCurrentIssue(id: string): Promise<void> {
     items.map((i) => ({ ...i, isCurrent: i.id === id }))
   );
 }
+
+export async function updateIssue(
+  id: string,
+  patch: Partial<Omit<Issue, "id" | "createdAt" | "isCurrent">>
+): Promise<Issue> {
+  let updated: Issue | undefined;
+  await updateCollection<Issue>(COLLECTION, (items) =>
+    items.map((i) => {
+      if (i.id !== id) return i;
+      updated = { ...i, ...patch };
+      return updated;
+    })
+  );
+  if (!updated) throw new Error(`Issue not found: ${id}`);
+  return updated;
+}

@@ -7,7 +7,7 @@ import {
   submissionFormSchema,
 } from "@ijaac/shared";
 import { S3_PREFIXES, putObjectBuffer } from "@ijaac/aws";
-import { createSubmission } from "@ijaac/data-store";
+import { createSubmission, getSettings } from "@ijaac/data-store";
 import { sendSubmissionEditorNotification, sendSubmissionReceivedEmail } from "@ijaac/email";
 
 export const runtime = "nodejs";
@@ -24,17 +24,16 @@ export async function POST(req: NextRequest) {
 
   const payloadRaw = formData.get("payload");
   const paymentRaw = formData.get("payment");
+  const couponCodeRaw = formData.get("couponCode");
   const file = formData.get("file");
 
-  if (typeof payloadRaw !== "string" || typeof paymentRaw !== "string" || !(file instanceof File)) {
+  if (typeof payloadRaw !== "string" || !(file instanceof File)) {
     return NextResponse.json({ error: "Missing form fields" }, { status: 400 });
   }
 
   let payloadJson: unknown;
-  let paymentJson: unknown;
   try {
     payloadJson = JSON.parse(payloadRaw);
-    paymentJson = JSON.parse(paymentRaw);
   } catch {
     return NextResponse.json({ error: "Malformed payload" }, { status: 400 });
   }
@@ -44,22 +43,60 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const paymentParsed = paymentVerificationSchema.safeParse(paymentJson);
-  if (!paymentParsed.success) {
-    return NextResponse.json({ error: "Missing or invalid payment details" }, { status: 400 });
+  // Coupon path: re-validate server-side against the live setting - never
+  // trust the client's say-so that a coupon is valid.
+  let waivedCouponCode: string | undefined;
+  if (typeof couponCodeRaw === "string" && couponCodeRaw.trim()) {
+    const settings = await getSettings();
+    if (
+      settings.earlyBirdEnabled &&
+      couponCodeRaw.trim().toUpperCase() === settings.earlyBirdCouponCode.toUpperCase()
+    ) {
+      waivedCouponCode = settings.earlyBirdCouponCode;
+    } else {
+      return NextResponse.json({ error: "Invalid or expired coupon code" }, { status: 400 });
+    }
   }
 
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keySecret) {
-    return NextResponse.json({ error: "Payment gateway is not configured" }, { status: 500 });
-  }
+  let paymentRecord: { orderId: string; paymentId: string; amountInPaise: number; currency: string; paidAt: string } | undefined;
 
-  const expectedSignature = createHmac("sha256", keySecret)
-    .update(`${paymentParsed.data.razorpay_order_id}|${paymentParsed.data.razorpay_payment_id}`)
-    .digest("hex");
+  if (!waivedCouponCode) {
+    if (typeof paymentRaw !== "string") {
+      return NextResponse.json({ error: "Missing payment details" }, { status: 400 });
+    }
 
-  if (expectedSignature !== paymentParsed.data.razorpay_signature) {
-    return NextResponse.json({ error: "Payment verification failed" }, { status: 402 });
+    let paymentJson: unknown;
+    try {
+      paymentJson = JSON.parse(paymentRaw);
+    } catch {
+      return NextResponse.json({ error: "Malformed payload" }, { status: 400 });
+    }
+
+    const paymentParsed = paymentVerificationSchema.safeParse(paymentJson);
+    if (!paymentParsed.success) {
+      return NextResponse.json({ error: "Missing or invalid payment details" }, { status: 400 });
+    }
+
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+      return NextResponse.json({ error: "Payment gateway is not configured" }, { status: 500 });
+    }
+
+    const expectedSignature = createHmac("sha256", keySecret)
+      .update(`${paymentParsed.data.razorpay_order_id}|${paymentParsed.data.razorpay_payment_id}`)
+      .digest("hex");
+
+    if (expectedSignature !== paymentParsed.data.razorpay_signature) {
+      return NextResponse.json({ error: "Payment verification failed" }, { status: 402 });
+    }
+
+    paymentRecord = {
+      orderId: paymentParsed.data.razorpay_order_id,
+      paymentId: paymentParsed.data.razorpay_payment_id,
+      amountInPaise: Math.round(Number(process.env.SUBMISSION_FEE_INR ?? "500") * 100),
+      currency: "INR",
+      paidAt: new Date().toISOString(),
+    };
   }
 
   if (!ACCEPTED_MANUSCRIPT_MIME_TYPES.includes(file.type)) {
@@ -88,13 +125,8 @@ export async function POST(req: NextRequest) {
     fileName: file.name,
     fileType: file.type,
     fileSize: file.size,
-    payment: {
-      orderId: paymentParsed.data.razorpay_order_id,
-      paymentId: paymentParsed.data.razorpay_payment_id,
-      amountInPaise: Math.round(Number(process.env.SUBMISSION_FEE_INR ?? "500") * 100),
-      currency: "INR",
-      paidAt: new Date().toISOString(),
-    },
+    payment: paymentRecord,
+    couponCode: waivedCouponCode,
   });
 
   // Best-effort notifications - a mail failure should not fail the submission,

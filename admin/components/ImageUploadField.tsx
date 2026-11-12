@@ -21,7 +21,7 @@ export default function ImageUploadField({
   label: string;
   value: string;
   onChange: (url: string) => void;
-  folder: "books" | "reviewers" | "editorial-board";
+  folder: "books" | "reviewers" | "editorial-board" | "issues";
   variant?: "circle" | "rect";
 }) {
   const [uploading, setUploading] = React.useState(false);

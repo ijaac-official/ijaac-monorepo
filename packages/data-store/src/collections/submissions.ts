@@ -4,6 +4,17 @@ import { readCollection, updateCollection } from "../json-store";
 
 const COLLECTION = "submissions";
 
+function matchesQuery(submission: Submission, query: string): boolean {
+  const haystack = [
+    submission.title,
+    ...submission.keywords,
+    ...submission.authors.flatMap((a) => [a.name, a.email]),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query.trim().toLowerCase());
+}
+
 export async function listSubmissions(filter?: {
   status?: SubmissionStatus;
   /** Case-insensitive match against title, keywords, or any author's name/email. */
@@ -15,17 +26,7 @@ export async function listSubmissions(filter?: {
     results = results.filter((s) => s.status === filter.status);
   }
   if (filter?.query?.trim()) {
-    const q = filter.query.trim().toLowerCase();
-    results = results.filter((s) => {
-      const haystack = [
-        s.title,
-        ...s.keywords,
-        ...s.authors.flatMap((a) => [a.name, a.email]),
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    });
+    results = results.filter((s) => matchesQuery(s, filter.query!));
   }
   return results;
 }
@@ -46,11 +47,16 @@ export async function listPublicationsForMonth(reference: Date = new Date()): Pr
 export async function listPublishedPapersPage(options?: {
   offset?: number;
   limit?: number;
+  query?: string;
 }): Promise<{ items: Submission[]; total: number }> {
   const items = await readCollection<Submission>(COLLECTION);
-  const published = items
+  let published = items
     .filter((s) => s.status === "PUBLISHED")
     .sort((a, b) => (b.publishedAt ?? b.submittedAt).localeCompare(a.publishedAt ?? a.submittedAt));
+
+  if (options?.query?.trim()) {
+    published = published.filter((s) => matchesQuery(s, options.query!));
+  }
 
   const offset = options?.offset ?? 0;
   const limit = options?.limit ?? 10;
@@ -89,6 +95,7 @@ export interface DecideSubmissionInput {
   issueNumber?: string;
   publishedFileKey?: string;
   publicFileKey?: string;
+  articleNumber?: string;
 }
 
 export async function decideSubmission(
@@ -110,6 +117,7 @@ export async function decideSubmission(
         issueNumber: input.issueNumber ?? item.issueNumber,
         publishedFileKey: input.publishedFileKey ?? item.publishedFileKey,
         publicFileKey: input.publicFileKey ?? item.publicFileKey,
+        articleNumber: input.articleNumber ?? item.articleNumber,
         publishedAt: input.status === "PUBLISHED" ? item.publishedAt ?? now : item.publishedAt,
         decidedAt: now,
         updatedAt: now,

@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import { listReviewers } from "@ijaac/data-store";
 import PersonCard from "@/components/PersonCard";
 import PageHero from "@/components/PageHero";
+import MotionCard from "@/components/MotionCard";
 
 export const metadata = { title: "Reviewers - IJAAC Journal" };
 export const revalidate = 0;
@@ -20,18 +21,20 @@ export default async function ReviewersPage() {
       />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Grid container spacing={3}>
-          {reviewers.map((r) => (
+          {reviewers.map((r, i) => (
             <Grid item xs={12} sm={6} md={4} key={r.id}>
-              <PersonCard
-                name={r.name}
-                designation={r.designation}
-                affiliation={r.affiliation}
-                country={r.country}
-                photoUrl={r.photoUrl}
-                bio={r.bio}
-                tags={r.areasOfInterest}
-                linkedinUrl={r.linkedinUrl}
-              />
+              <MotionCard delay={(i % 3) * 0.08}>
+                <PersonCard
+                  name={r.name}
+                  designation={r.designation}
+                  affiliation={r.affiliation}
+                  country={r.country}
+                  photoUrl={r.photoUrl}
+                  bio={r.bio}
+                  tags={r.areasOfInterest}
+                  linkedinUrl={r.linkedinUrl}
+                />
+              </MotionCard>
             </Grid>
           ))}
         </Grid>
