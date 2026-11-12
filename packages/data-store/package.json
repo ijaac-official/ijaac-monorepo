@@ -1,0 +1,22 @@
+{
+  "name": "@ijaac/data-store",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@ijaac/aws": "workspace:*",
+    "@ijaac/shared": "workspace:*",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.16.10",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "seed": "tsx src/seed.ts"
+  }
+}

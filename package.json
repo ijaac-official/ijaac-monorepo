@@ -1,0 +1,16 @@
+{
+  "name": "ijaac-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:admin": "pnpm --filter admin dev -p 3001",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:admin": "pnpm --filter admin build",
+    "db:seed": "pnpm --filter @ijaac/data-store seed",
+    "dev:s3-mock": "s3rver --port 4568 --address 0.0.0.0 --directory .s3rver-data"
+  },
+  "devDependencies": {
+    "s3rver": "^3.7.1"
+  }
+}
