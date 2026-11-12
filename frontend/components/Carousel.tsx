@@ -18,7 +18,9 @@ export default function Carousel({
   const scroll = (direction: "left" | "right") => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollBy({ left: direction === "left" ? -itemWidth - 16 : itemWidth + 16, behavior: "smooth" });
+    const card = el.firstElementChild as HTMLElement | null;
+    const step = (card?.offsetWidth ?? itemWidth) + 16;
+    el.scrollBy({ left: direction === "left" ? -step : step, behavior: "smooth" });
   };
 
   return (
@@ -40,7 +42,8 @@ export default function Carousel({
           <Box
             key={i}
             sx={{
-              flex: `0 0 ${itemWidth}px`,
+              flex: { xs: "0 0 78%", sm: `0 0 ${itemWidth}px` },
+              maxWidth: { xs: 340, sm: "none" },
               scrollSnapAlign: "start",
             }}
           >

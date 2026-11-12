@@ -1,11 +1,11 @@
 import Typography from "@mui/material/Typography";
-import { getSettings } from "@ijaac/data-store";
-import PromotionsForm from "@/components/PromotionsForm";
+import { listCoupons } from "@ijaac/data-store";
+import CouponManager from "@/components/CouponManager";
 
 export const revalidate = 0;
 
 export default async function PromotionsPage() {
-  const settings = await getSettings();
+  const coupons = await listCoupons();
 
   return (
     <>
@@ -13,11 +13,15 @@ export default async function PromotionsPage() {
         Promotions
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Toggle a free-submission coupon. While enabled, authors who enter the coupon code at
-        checkout skip the payment step entirely - the server checks this setting on every
-        submission, not just the client.
+        Create a percentage-discount coupon with a fixed number of uses. A 100% coupon makes the
+        submission free and skips checkout; anything less charges the discounted amount through
+        Razorpay. Prices are calculated server-side on every use, never trusted from the client.
+        &quot;Stop Immediately&quot; kills a coupon even if uses remain.
       </Typography>
-      <PromotionsForm initialSettings={settings} />
+      <CouponManager
+        initialCoupons={coupons}
+        baseFeeInr={Number(process.env.SUBMISSION_FEE_INR ?? "1200")}
+      />
     </>
   );
 }

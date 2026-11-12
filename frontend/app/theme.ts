@@ -44,9 +44,14 @@ const theme = createTheme({
           paddingLeft: 20,
           paddingRight: 20,
           transition: "transform 0.15s ease, box-shadow 0.15s ease",
-          "&:hover": {
-            transform: "translateY(-1px)",
-            boxShadow: "0 6px 14px rgba(122,31,43,0.24)",
+          // Only lift on devices with real hover (mouse) - on touch, this
+          // selector never matches, so there's no "stuck hover" state after
+          // a tap, and no mismatched shadow color under non-primary buttons.
+          "@media (hover: hover)": {
+            "&:hover": {
+              transform: "translateY(-1px)",
+              boxShadow: "0 6px 14px rgba(0,0,0,0.22)",
+            },
           },
         },
       },

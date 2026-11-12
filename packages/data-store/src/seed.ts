@@ -1,6 +1,5 @@
 import path from "node:path";
 import dotenv from "dotenv";
-import bcrypt from "bcryptjs";
 
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
@@ -19,16 +18,9 @@ async function main() {
   // --- Admin user --------------------------------------------------------
   const existingAdmins = await listAdminUsers();
   if (existingAdmins.length === 0) {
-    const email = process.env.ADMIN_SEED_EMAIL ?? "admin@ijaac.org";
-    const password = process.env.ADMIN_SEED_PASSWORD ?? "ChangeMe123!";
-    const passwordHash = await bcrypt.hash(password, 12);
-    await createAdminUser({
-      name: "Super Admin",
-      email,
-      passwordHash,
-      role: "SUPER_ADMIN",
-    });
-    console.log(`Created admin user ${email} / password: ${password} (CHANGE THIS)`);
+    const email = process.env.ADMIN_SEED_EMAIL ?? "ijaac.official@gmail.com";
+    await createAdminUser({ name: "Super Admin", email, role: "SUPER_ADMIN" });
+    console.log(`Created admin user ${email} - sign in with an emailed one-time code`);
   } else {
     console.log("Admin users already exist, skipping.");
   }

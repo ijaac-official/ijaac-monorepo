@@ -101,9 +101,9 @@ and books (placeholder images via placehold.co):
 pnpm db:seed
 ```
 
-This prints the generated admin email/password - **change it** (there's no
-"forgot password" flow yet; update `admin-users.json` in S3 directly or add
-a new admin user and deactivate the seeded one).
+This creates the admin account for `ADMIN_SEED_EMAIL`. There is no password:
+on the admin login page, enter that email and sign in with the 6-digit code
+it receives (valid 10 minutes, single use, 5 attempts, 60s between resends).
 
 ## 5. Run
 

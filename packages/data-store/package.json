@@ -6,11 +6,9 @@
   "types": "src/index.ts",
   "dependencies": {
     "@ijaac/aws": "workspace:*",
-    "@ijaac/shared": "workspace:*",
-    "bcryptjs": "^2.4.3"
+    "@ijaac/shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.16.10",
     "dotenv": "^16.4.5",
     "tsx": "^4.19.1",

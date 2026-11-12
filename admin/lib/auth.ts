@@ -1,46 +1,27 @@
-import bcrypt from "bcryptjs";
-import { authenticator } from "otplib";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getAdminUserByEmail, touchLastLogin } from "@ijaac/data-store";
-
-/**
- * Thrown from authorize() to tell the login page to reveal the 6-digit code
- * field and re-submit, instead of a flat "invalid credentials" failure.
- */
-export class TotpRequiredError extends Error {
-  constructor() {
-    super("TOTP_REQUIRED");
-  }
-}
+import { otpVerifySchema } from "@ijaac/shared";
+import { consumeLoginOtp } from "@ijaac/data-store";
+import { otpMatches } from "./otp";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 }, // 8 hours
   pages: { signIn: "/login" },
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "Email code",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-        totpCode: { label: "2FA Code", type: "text" },
+        code: { label: "Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        const parsed = otpVerifySchema.safeParse(credentials);
+        if (!parsed.success) return null;
 
-        const user = await getAdminUserByEmail(credentials.email);
-        if (!user || !user.isActive) return null;
-
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) return null;
-
-        if (user.twoFactorEnabled && user.totpSecret) {
-          if (!credentials.totpCode) throw new TotpRequiredError();
-          const codeValid = authenticator.verify({ token: credentials.totpCode, secret: user.totpSecret });
-          if (!codeValid) return null;
-        }
-
-        await touchLastLogin(user.id).catch(() => undefined);
+        const user = await consumeLoginOtp(parsed.data.email, (u, storedHash) =>
+          otpMatches(u.id, parsed.data.code, storedHash)
+        );
+        if (!user) return null;
 
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       },

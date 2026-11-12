@@ -40,7 +40,7 @@ const SLIDES: Slide[] = [
     ctaHref: "/reviewers",
   },
   {
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80",
+    image: "/stock/indian-researcher-2.jpg",
     eyebrow: "Current Issue",
     title: "Read the Latest Published Research",
     subtitle: "Explore our current issue and browse the full archive of past publications.",
@@ -48,7 +48,7 @@ const SLIDES: Slide[] = [
     ctaHref: "/current-issue",
   },
   {
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1920&q=80",
+    image: "/stock/indian-researcher-1.jpg",
     eyebrow: "Join the Community",
     title: "Become Part of Our Editorial Network",
     subtitle: "Reviewers and editorial board members from leading institutions guide every decision.",
@@ -72,7 +72,7 @@ export default function HeroCarousel() {
   const goTo = (i: number) => setIndex((i + SLIDES.length) % SLIDES.length);
 
   return (
-    <Box sx={{ position: "relative", height: { xs: 480, md: 560 }, overflow: "hidden" }}>
+    <Box sx={{ position: "relative", height: { xs: 560, sm: 520, md: 560 }, overflow: "hidden" }}>
       {SLIDES.map((slide, i) => (
         <Box
           key={slide.image}
@@ -109,32 +109,49 @@ export default function HeroCarousel() {
           display: "flex",
           alignItems: "center",
           color: "white",
+          pb: { xs: 5, sm: 0 },
         }}
       >
-        <Box sx={{ maxWidth: 680 }}>
+        <Box sx={{ maxWidth: 680, width: "100%" }}>
           <Typography
             variant="overline"
-            sx={{ color: "secondary.light", fontWeight: 700, letterSpacing: 1.5 }}
+            sx={{ color: "secondary.light", fontWeight: 700, letterSpacing: 1.5, fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
           >
             {SLIDES[index].eyebrow}
           </Typography>
-          <Typography variant="h3" fontWeight={700} gutterBottom sx={{ mt: 1 }}>
+          <Typography
+            variant="h3"
+            fontWeight={700}
+            gutterBottom
+            sx={{ mt: 1, fontSize: { xs: "1.6rem", sm: "2.2rem", md: "3rem" }, lineHeight: 1.2 }}
+          >
             {SLIDES[index].title}
           </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9, mb: 3, fontWeight: 400 }}>
+          <Typography
+            variant="h6"
+            sx={{ opacity: 0.9, mb: 3, fontWeight: 400, fontSize: { xs: "0.9rem", sm: "1.1rem", md: "1.25rem" } }}
+          >
             {SLIDES[index].subtitle}
           </Typography>
-          <Stack direction="row" spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ width: { xs: "100%", sm: "auto" } }}>
             <Button
               component={Link}
               href={SLIDES[index].ctaHref}
               variant="contained"
               color="secondary"
               size="large"
+              sx={{ width: { xs: "100%", sm: "auto" } }}
             >
               {SLIDES[index].ctaLabel}
             </Button>
-            <Button component={Link} href="/current-issue" variant="outlined" color="inherit" size="large">
+            <Button
+              component={Link}
+              href="/current-issue"
+              variant="outlined"
+              color="inherit"
+              size="large"
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
               View Current Issue
             </Button>
           </Stack>
@@ -175,7 +192,7 @@ export default function HeroCarousel() {
       <Stack
         direction="row"
         spacing={1}
-        sx={{ position: "absolute", bottom: 20, left: 0, right: 0, justifyContent: "center" }}
+        sx={{ position: "absolute", bottom: { xs: 10, sm: 20 }, left: 0, right: 0, justifyContent: "center" }}
       >
         {SLIDES.map((slide, i) => (
           <Box

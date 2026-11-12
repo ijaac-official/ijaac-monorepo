@@ -20,13 +20,15 @@ const PAGE_SIZE = 10;
 export default function PublicationsList({
   initialItems,
   total,
+  initialQuery,
 }: {
   initialItems: Submission[];
   total: number;
+  initialQuery?: string;
 }) {
   const [items, setItems] = React.useState(initialItems);
   const [currentTotal, setCurrentTotal] = React.useState(total);
-  const [query, setQuery] = React.useState("");
+  const [query, setQuery] = React.useState(initialQuery ?? "");
   const [loading, setLoading] = React.useState(false);
   const [searching, setSearching] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);

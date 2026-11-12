@@ -25,7 +25,6 @@ import Groups2Icon from "@mui/icons-material/Groups2";
 import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import SecurityIcon from "@mui/icons-material/Security";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 const DRAWER_WIDTH = 240;
@@ -39,7 +38,6 @@ const NAV_ITEMS = [
   { label: "Editorial Board", href: "/editorial-board", icon: <Groups2Icon /> },
   { label: "Certificates", href: "/certificates", icon: <WorkspacePremiumIcon /> },
   { label: "Promotions", href: "/promotions", icon: <LocalOfferIcon /> },
-  { label: "Security", href: "/security", icon: <SecurityIcon /> },
 ];
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {

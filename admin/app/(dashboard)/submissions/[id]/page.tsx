@@ -7,7 +7,7 @@ import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import { notFound } from "next/navigation";
 import { getSubmission, listIssues } from "@ijaac/data-store";
-import { presignGetUrl } from "@ijaac/aws";
+import { formatInr } from "@ijaac/shared";
 import DecisionPanel from "@/components/DecisionPanel";
 
 export const revalidate = 0;
@@ -16,10 +16,9 @@ export default async function SubmissionDetailPage({ params }: { params: { id: s
   const submission = await getSubmission(params.id);
   if (!submission) notFound();
 
-  const [fileUrl, issues] = await Promise.all([
-    presignGetUrl(submission.fileKey).catch(() => null),
-    listIssues().catch(() => []),
-  ]);
+  const issues = await listIssues().catch(() => []);
+  const fileUrl = `/api/submissions/${submission.id}/file`;
+  const isPdf = submission.fileType === "application/pdf";
 
   return (
     <>
@@ -75,14 +74,58 @@ export default async function SubmissionDetailPage({ params }: { params: { id: s
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {submission.fileName}
             </Typography>
-            {fileUrl ? (
+            <Stack spacing={1}>
               <Button href={fileUrl} target="_blank" rel="noopener noreferrer" variant="contained" fullWidth>
-                View / Download
+                {isPdf ? "View Manuscript" : "Download Manuscript"}
               </Button>
+              {submission.publishedFileKey && (
+                <Button
+                  href={`${fileUrl}?version=published`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
+                  fullWidth
+                >
+                  View Published (Typeset) PDF
+                </Button>
+              )}
+            </Stack>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              Payment
+            </Typography>
+            {submission.payment ? (
+              <>
+                <Typography variant="body2">
+                  <b>Paid:</b> {formatInr(submission.payment.amountInPaise)}
+                  {submission.payment.baseAmountInPaise &&
+                  submission.payment.baseAmountInPaise !== submission.payment.amountInPaise
+                    ? ` (of ${formatInr(submission.payment.baseAmountInPaise)})`
+                    : ""}
+                </Typography>
+                {submission.payment.receiptNumber && (
+                  <Typography variant="body2">
+                    <b>Receipt:</b> {submission.payment.receiptNumber}
+                  </Typography>
+                )}
+                <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
+                  <b>Razorpay Payment:</b> {submission.payment.paymentId}
+                </Typography>
+              </>
             ) : (
-              <Typography variant="body2" color="error">
-                Could not generate file link.
+              <Typography variant="body2" color="text.secondary">
+                No payment - fee waived.
               </Typography>
+            )}
+            {submission.couponCode && (
+              <Chip
+                label={`${submission.couponCode}${submission.discountPercent ? ` - ${submission.discountPercent}% off` : ""}`}
+                size="small"
+                color="secondary"
+                sx={{ mt: 1 }}
+              />
             )}
           </Paper>
 

@@ -6,6 +6,36 @@ import {
   submissionReceivedTemplate,
 } from "./templates/submission";
 import { certificateEmailTemplate } from "./templates/certificate";
+import { receiptEmailTemplate } from "./templates/receipt";
+import { loginOtpTemplate } from "./templates/login-otp";
+
+export async function sendLoginOtpEmail(to: string, code: string, ttlMinutes: number): Promise<void> {
+  const { subject, html } = loginOtpTemplate(code, ttlMinutes);
+  await getTransporter().sendMail({ from: getFromAddress(), to, subject, html });
+}
+
+export async function sendPaymentReceiptEmail(input: {
+  to: string;
+  paperTitle: string;
+  amountLabel: string;
+  receiptNumber: string;
+  receiptPdf: Uint8Array;
+}): Promise<void> {
+  const { subject, html } = receiptEmailTemplate(input.paperTitle, input.amountLabel, input.receiptNumber);
+  await getTransporter().sendMail({
+    from: getFromAddress(),
+    to: input.to,
+    subject,
+    html,
+    attachments: [
+      {
+        filename: `receipt-${input.receiptNumber}.pdf`,
+        content: Buffer.from(input.receiptPdf),
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}
 
 export async function sendSubmissionReceivedEmail(submission: Submission): Promise<void> {
   const { subject, html } = submissionReceivedTemplate(submission);

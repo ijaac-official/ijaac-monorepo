@@ -14,7 +14,7 @@ export default function AboutPage() {
       <PageHero
         title="About the Journal"
         subtitle="Learn about our mission, scope, and the peer-review process behind every publication."
-        image="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1920&q=80"
+        image="/stock/indian-researcher-1.jpg"
       />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Grid container spacing={4}>
@@ -53,7 +53,7 @@ export default function AboutPage() {
                 Journal Facts
               </Typography>
               <Typography variant="body2" paragraph>
-                <b>Frequency:</b> Bi-monthly
+                <b>Frequency:</b> Monthly
               </Typography>
               <Typography variant="body2" paragraph>
                 <b>Access Model:</b> Open Access

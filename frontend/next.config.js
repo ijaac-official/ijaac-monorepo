@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@ijaac/shared", "@ijaac/aws", "@ijaac/data-store", "@ijaac/email"],
+  transpilePackages: [
+    "@ijaac/shared",
+    "@ijaac/aws",
+    "@ijaac/data-store",
+    "@ijaac/email",
+    "@ijaac/certificate",
+  ],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co" },

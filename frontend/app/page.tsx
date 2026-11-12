@@ -216,7 +216,7 @@ export default async function HomePage() {
           <Grid item xs={12} md={6}>
             <Box sx={{ position: "relative", width: "100%", height: 340 }}>
               <Image
-                src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=1200&q=80"
+                src="/stock/indian-researcher-2.jpg"
                 alt="Researchers collaborating"
                 fill
                 style={{ objectFit: "cover" }}

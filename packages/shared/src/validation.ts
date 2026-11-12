@@ -92,12 +92,11 @@ export const contactFormSchema = z.object({
   message: z.string().min(10).max(3000),
 });
 
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  totpCode: z.string().optional(),
+export const otpRequestSchema = z.object({
+  email: z.string().trim().email(),
 });
 
-export const totpVerifySchema = z.object({
-  code: z.string().length(6, "Enter the 6-digit code"),
+export const otpVerifySchema = z.object({
+  email: z.string().trim().email(),
+  code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code"),
 });

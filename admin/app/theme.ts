@@ -28,9 +28,11 @@ const theme = createTheme({
           paddingLeft: 18,
           paddingRight: 18,
           transition: "transform 0.15s ease, box-shadow 0.15s ease",
-          "&:hover": {
-            transform: "translateY(-1px)",
-            boxShadow: "0 6px 14px rgba(122,31,43,0.22)",
+          "@media (hover: hover)": {
+            "&:hover": {
+              transform: "translateY(-1px)",
+              boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
+            },
           },
         },
         contained: {

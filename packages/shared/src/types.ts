@@ -62,11 +62,14 @@ export interface Submission {
     orderId: string;
     paymentId: string;
     amountInPaise: number;
+    baseAmountInPaise?: number;
     currency: string;
     paidAt: string;
+    receiptNumber?: string;
   };
-  /** Set when the submission fee was waived via an early-bird coupon */
+  /** Coupon applied at checkout, if any */
   couponCode?: string;
+  discountPercent?: number;
 
   submittedAt: string;
   updatedAt: string;
@@ -78,13 +81,16 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  passwordHash: string;
   role: AdminRole;
   isActive: boolean;
   lastLoginAt?: string;
-  /** TOTP secret (base32) - set once the owner completes 2FA setup */
-  totpSecret?: string;
-  twoFactorEnabled: boolean;
+  /** Pending email login code - HMAC of the code, never the code itself */
+  loginOtp?: {
+    hash: string;
+    expiresAt: string;
+    sentAt: string;
+    attempts: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -158,15 +164,19 @@ export interface EditorialBoardMember {
   updatedAt: string;
 }
 
-export interface PlatformSettings {
-  earlyBirdEnabled: boolean;
-  earlyBirdCouponCode: string;
+export interface Coupon {
+  id: string;
+  code: string;
+  /** 1-100; 100 means the submission is free and checkout is skipped entirely */
+  discountPercent: number;
+  /** Total number of submissions this coupon can be applied to */
+  maxRedemptions: number;
+  redeemedCount: number;
+  /** Manual kill switch - "stop immediately" even if redemptions remain */
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
-
-export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
-  earlyBirdEnabled: false,
-  earlyBirdCouponCode: "EARLYBIRD",
-};
 
 export interface ContactMessage {
   id: string;

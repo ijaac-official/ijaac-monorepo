@@ -1,0 +1,11 @@
+# Never upload local env files - Vercel injects its own env vars, and Next.js
+# would otherwise read these at build time (local secrets, test fees, localhost URLs).
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+
+**/node_modules
+**/.next
+.s3rver-data

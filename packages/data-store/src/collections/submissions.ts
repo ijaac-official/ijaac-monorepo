@@ -63,6 +63,12 @@ export async function listPublishedPapersPage(options?: {
   return { items: published.slice(offset, offset + limit), total: published.length };
 }
 
+/** True if a Razorpay order has already been attached to a submission - blocks replaying a paid order. */
+export async function isPaymentOrderUsed(orderId: string): Promise<boolean> {
+  const items = await readCollection<Submission>(COLLECTION);
+  return items.some((s) => s.payment?.orderId === orderId);
+}
+
 export async function getSubmission(id: string): Promise<Submission | null> {
   const items = await readCollection<Submission>(COLLECTION);
   return items.find((s) => s.id === id) ?? null;
@@ -73,11 +79,13 @@ export type NewSubmissionInput = Omit<
   "id" | "status" | "submittedAt" | "updatedAt" | "decidedAt" | "decidedById" | "reviewComment"
 >;
 
-export async function createSubmission(input: NewSubmissionInput): Promise<Submission> {
+export async function createSubmission(
+  input: NewSubmissionInput & { id?: string }
+): Promise<Submission> {
   const now = new Date().toISOString();
   const record: Submission = {
     ...input,
-    id: randomUUID(),
+    id: input.id ?? randomUUID(),
     status: "PENDING",
     submittedAt: now,
     updatedAt: now,
