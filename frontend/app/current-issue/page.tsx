@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
@@ -6,7 +8,12 @@ import { getCurrentIssue, listPublicPapers } from "@ijaac/data-store";
 import PageHero from "@/components/PageHero";
 import IssueDetailView from "../archives/_components/IssueDetailView";
 
-export const metadata = { title: "Current Issue - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Current Issue",
+  description:
+    "Read the latest monthly issue of the International Journal of Applied AI & Computing (IJAAC) - open-access, peer-reviewed articles free to download.",
+  path: "/current-issue",
+});
 export const revalidate = 0;
 
 async function CurrentIssueContent() {
@@ -32,6 +39,7 @@ async function CurrentIssueContent() {
 export default function CurrentIssuePage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Current Issue", path: "/current-issue" }])} />
       <PageHero
         title="Current Issue"
         subtitle="The latest monthly issue of IJAAC"

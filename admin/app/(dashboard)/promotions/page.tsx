@@ -1,11 +1,11 @@
 import Typography from "@mui/material/Typography";
-import { listCoupons } from "@ijaac/data-store";
+import { defaultSettings, getSettings, listCoupons } from "@ijaac/data-store";
 import CouponManager from "@/components/CouponManager";
 
 export const revalidate = 0;
 
 export default async function PromotionsPage() {
-  const coupons = await listCoupons();
+  const [coupons, settings] = await Promise.all([listCoupons(), getSettings().catch(() => defaultSettings())]);
 
   return (
     <>
@@ -21,7 +21,8 @@ export default async function PromotionsPage() {
       </Typography>
       <CouponManager
         initialCoupons={coupons}
-        baseFeeInr={Number(process.env.SUBMISSION_FEE_INR ?? "1200")}
+        baseFeeInr={Math.round(settings.paperFeeInPaise / 100)}
+        bookFeeInr={Math.round(settings.bookFeeInPaise / 100)}
       />
     </>
   );

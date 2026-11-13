@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
@@ -9,7 +11,12 @@ import PersonCard from "@/components/PersonCard";
 import PageHero from "@/components/PageHero";
 import MotionCard from "@/components/MotionCard";
 
-export const metadata = { title: "Editorial Board - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Editorial Board",
+  description:
+    "Meet the editors and board members of the International Journal of Applied AI & Computing (IJAAC) who oversee peer review and editorial standards.",
+  path: "/editorial-board",
+});
 export const revalidate = 0;
 
 const ROLE_LABELS: Record<string, string> = {
@@ -69,6 +76,7 @@ async function EditorialBoardContent() {
 export default function EditorialBoardPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Editorial Board", path: "/editorial-board" }])} />
       <PageHero
         title="Editorial Board"
         subtitle="Meet the editors and board members who guide the journal's academic standards."

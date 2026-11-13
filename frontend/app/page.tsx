@@ -14,7 +14,6 @@ import EventRepeatOutlinedIcon from "@mui/icons-material/EventRepeatOutlined";
 import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import { visuallyHidden } from "@mui/utils";
 import type { Metadata } from "next";
 import {
   countCompletedReviews,
@@ -286,7 +285,20 @@ export default function HomePage() {
   return (
     <Box>
       <JsonLd data={periodicalJsonLd()} />
-      <Typography component="h1" sx={visuallyHidden}>
+      <Typography
+        component="h1"
+        sx={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          p: 0,
+          m: -1,
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
         {JOURNAL_NAME} ({JOURNAL_SHORT}) - a peer-reviewed, open-access journal of applied AI and computing
       </Typography>
       <HeroCarousel />

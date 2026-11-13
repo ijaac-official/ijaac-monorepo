@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
@@ -10,7 +12,12 @@ import { listIssues } from "@ijaac/data-store";
 import PageHero from "@/components/PageHero";
 import IssueCover from "@/components/IssueCover";
 
-export const metadata = { title: "Archives - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Archives - All Issues",
+  description:
+    "Browse every issue of the International Journal of Applied AI & Computing by volume and month. One volume per year, twelve monthly issues.",
+  path: "/archives",
+});
 export const revalidate = 0;
 
 /** Groups issues (already sorted newest first) by year + volume. */
@@ -73,6 +80,7 @@ async function ArchivesContent() {
 export default function ArchivesPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Archives", path: "/archives" }])} />
       <PageHero
         title="Archives"
         subtitle="Browse past issues of the journal - one volume per year, a new issue every month."

@@ -25,7 +25,7 @@ export default function PolicyPage({
         </Typography>
         {sections.map((section) => (
           <div key={section.heading}>
-            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mt: 4 }}>
+            <Typography variant="h6" component="h2" fontWeight={600} gutterBottom sx={{ mt: 4 }}>
               {section.heading}
             </Typography>
             {section.body.map((para, i) => (

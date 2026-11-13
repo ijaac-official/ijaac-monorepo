@@ -78,19 +78,22 @@ export interface CertificateAssets {
   stampPng?: Uint8Array;
   /** public/certificate-bg.png - optional background art (vector motif otherwise). */
   backgroundPng?: Uint8Array;
-  /** CERTIFICATE_EDITOR_NAME env var - printed above the signature line when set. */
+  /** CERTIFICATE_EDITOR_NAME env var, default "Vijay M". */
   editorInChiefName?: string;
+  /** public/signature.png - handwritten Editor-in-Chief signature. */
+  signaturePng?: Uint8Array;
 }
 
 /** Everything the certificate template can take from the environment, loaded in parallel. */
 export async function loadCertificateAssets(): Promise<CertificateAssets> {
-  const [logoPng, stampPng, backgroundPng] = await Promise.all([
+  const [logoPng, stampPng, backgroundPng, signaturePng] = await Promise.all([
     loadLogoPng(),
     loadPublicPng("stamp.png"),
     loadPublicPng("certificate-bg.png"),
+    loadPublicPng("signature.png"),
   ]);
-  const editorInChiefName = process.env.CERTIFICATE_EDITOR_NAME?.trim() || undefined;
-  return { logoPng, stampPng, backgroundPng, editorInChiefName };
+  const editorInChiefName = process.env.CERTIFICATE_EDITOR_NAME?.trim() || "Vijay M";
+  return { logoPng, stampPng, backgroundPng, signaturePng, editorInChiefName };
 }
 
 const MONTHS = [

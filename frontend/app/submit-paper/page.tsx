@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
@@ -9,11 +11,16 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import PageHero from "@/components/PageHero";
 import SubmissionForm from "@/components/SubmissionForm";
 
-export const metadata = { title: "Submit Paper - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Submit a Paper",
+  description:
+    "Submit your manuscript to IJAAC online: PDF, DOC or DOCX up to 20 MB, 3-10 keywords, and an INR 1,200 publication fee paid securely at submission.",
+  path: "/submit-paper",
+});
 
 const CHECKLIST = [
   "Manuscript is original and not under review elsewhere",
-  "Abstract is 100-300 words with 3-10 keywords",
+  "Abstract is 100-5000 characters, with 3-10 keywords",
   "All co-authors have reviewed and approved the submission",
   "File is PDF, DOC, or DOCX, under 20 MB",
 ];
@@ -21,6 +28,7 @@ const CHECKLIST = [
 export default function SubmitPaperPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Submit Paper", path: "/submit-paper" }])} />
       <PageHero
         title="Submit Your Manuscript"
         subtitle="Please complete all fields accurately. See our Author Guidelines before submitting."

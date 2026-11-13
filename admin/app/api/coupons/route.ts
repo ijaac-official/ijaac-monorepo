@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { couponScopeSchema } from "@ijaac/shared";
 import { createCoupon, listCoupons } from "@ijaac/data-store";
 import { requireSession } from "@/lib/requireSession";
 
@@ -7,6 +8,7 @@ const couponInputSchema = z.object({
   code: z.string().trim().min(3).max(30).regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, - and _ only"),
   discountPercent: z.number().int().min(1).max(100),
   maxRedemptions: z.number().int().min(1).max(100000),
+  appliesTo: couponScopeSchema.optional(),
 });
 
 export async function GET() {

@@ -24,15 +24,18 @@ export const revalidate = 0;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const credential = await loadAuthorCredential(params.id);
-  if (!credential) return { title: "Credential not found - IJAAC", robots: { index: false } };
+  if (!credential) return { title: "Credential not found", robots: { index: false } };
   const { record, author } = credential;
   const title = `${author.name} - Verified publication credential | IJAAC`;
   const description = `IJAAC certifies that ${author.name} published "${record.title}" in ${JOURNAL_NAME}, ${record.issueLabel}.`;
   const url = authorCredentialPageUrl(author.credentialId);
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
+    // Individual author credentials are shareable by link but kept out of search
+    // indexes: they concern a named person and duplicate the article page.
+    robots: { index: false, follow: true },
     openGraph: {
       type: "website",
       url,

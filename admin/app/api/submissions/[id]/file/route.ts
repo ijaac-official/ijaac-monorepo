@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSubmission } from "@ijaac/data-store";
-import { getObjectBuffer } from "@ijaac/aws";
+import { getObjectStream } from "@ijaac/aws";
 import { requireSession } from "@/lib/requireSession";
 
 export const runtime = "nodejs";
@@ -21,16 +21,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const key = wantsPublished && submission.publishedFileKey ? submission.publishedFileKey : submission.fileKey;
   const isTypeset = key === submission.publishedFileKey;
 
-  const buffer = await getObjectBuffer(key);
-  if (!buffer) return NextResponse.json({ error: "File not found" }, { status: 404 });
+  // Stream from S3 (no full in-memory buffer; avoids response-size limits for large manuscripts)
+  const object = await getObjectStream(key);
+  if (!object) return NextResponse.json({ error: "File not found" }, { status: 404 });
 
   const contentType = isTypeset ? "application/pdf" : submission.fileType;
   const fileName = isTypeset ? `${submission.articleNumber ?? submission.id}.pdf` : submission.fileName;
   const disposition = contentType === "application/pdf" ? "inline" : "attachment";
 
-  return new NextResponse(new Uint8Array(buffer), {
+  return new NextResponse(object.stream, {
     status: 200,
     headers: {
+      ...(object.contentLength != null ? { "Content-Length": String(object.contentLength) } : {}),
       "Content-Type": contentType,
       "Content-Disposition": `${disposition}; filename="${fileName.replace(/[^\x20-\x7e]|"/g, "_")}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Cache-Control": "private, no-store",

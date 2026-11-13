@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "notistack";
-import type { Coupon } from "@ijaac/shared";
+import type { Coupon, CouponScope } from "@ijaac/shared";
 import Button from "@mui/material/Button";
 import Table from "@mui/material/Table";
 import TableHead from "@mui/material/TableHead";
@@ -28,6 +28,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import CircularProgress from "@mui/material/CircularProgress";
+import MenuItem from "@mui/material/MenuItem";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -39,8 +40,18 @@ type FormState = {
   maxRedemptions: string;
   isActive: boolean;
   redeemedCount: number;
+  appliesTo: CouponScope;
 };
-const EMPTY: FormState = { code: "", discountPercent: "100", maxRedemptions: "50", isActive: true, redeemedCount: 0 };
+const EMPTY: FormState = {
+  code: "",
+  discountPercent: "100",
+  maxRedemptions: "50",
+  isActive: true,
+  redeemedCount: 0,
+  appliesTo: "ALL",
+};
+
+const SCOPE_LABELS: Record<CouponScope, string> = { ALL: "Papers & books", PAPER: "Papers only", BOOK: "Books only" };
 
 async function errorFrom(res: Response, fallback: string): Promise<string> {
   const body = await res.json().catch(() => ({}));
@@ -50,9 +61,13 @@ async function errorFrom(res: Response, fallback: string): Promise<string> {
 export default function CouponManager({
   initialCoupons,
   baseFeeInr,
+  bookFeeInr,
 }: {
   initialCoupons: Coupon[];
+  /** Paper submission fee in rupees */
   baseFeeInr: number;
+  /** Book publication fee in rupees */
+  bookFeeInr: number;
 }) {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
@@ -65,7 +80,11 @@ export default function CouponManager({
 
   const isEdit = !!form.id;
   const pct = Math.min(100, Math.max(0, Number(form.discountPercent) || 0));
-  const previewInr = pct >= 100 ? 0 : Math.max(1, Math.round(baseFeeInr * (1 - pct / 100)));
+  const priceAfter = (fee: number) => (pct >= 100 ? 0 : Math.max(1, Math.round(fee * (1 - pct / 100))));
+  const previewParts = [
+    form.appliesTo !== "BOOK" ? `papers ₹${priceAfter(baseFeeInr)} instead of ₹${baseFeeInr}` : null,
+    form.appliesTo !== "PAPER" ? `books ₹${priceAfter(bookFeeInr)} instead of ₹${bookFeeInr}` : null,
+  ].filter(Boolean);
 
   const openCreate = () => {
     setForm(EMPTY);
@@ -81,6 +100,7 @@ export default function CouponManager({
       maxRedemptions: String(c.maxRedemptions),
       isActive: c.isActive,
       redeemedCount: c.redeemedCount,
+      appliesTo: c.appliesTo ?? "ALL",
     });
     setError(null);
     setOpen(true);
@@ -106,8 +126,14 @@ export default function CouponManager({
     setError(null);
     try {
       const body = isEdit
-        ? { code: form.code.trim().toUpperCase(), discountPercent, maxRedemptions, isActive: form.isActive }
-        : { code: form.code.trim().toUpperCase(), discountPercent, maxRedemptions };
+        ? {
+            code: form.code.trim().toUpperCase(),
+            discountPercent,
+            maxRedemptions,
+            isActive: form.isActive,
+            appliesTo: form.appliesTo,
+          }
+        : { code: form.code.trim().toUpperCase(), discountPercent, maxRedemptions, appliesTo: form.appliesTo };
       const res = await fetch(isEdit ? `/api/coupons/${form.id}` : "/api/coupons", {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,6 +202,7 @@ export default function CouponManager({
             <TableRow>
               <TableCell>Code</TableCell>
               <TableCell>Discount</TableCell>
+              <TableCell>Applies To</TableCell>
               <TableCell>Redemptions</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
@@ -194,6 +221,9 @@ export default function CouponManager({
                     ) : (
                       `${c.discountPercent}% off`
                     )}
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    <Chip label={SCOPE_LABELS[c.appliesTo ?? "ALL"]} size="small" variant="outlined" />
                   </TableCell>
                   <TableCell sx={{ minWidth: 160 }}>
                     <Typography variant="body2">
@@ -278,11 +308,25 @@ export default function CouponManager({
               InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
               helperText={
                 pct >= 100
-                  ? `Free submission - checkout is skipped (base fee ₹${baseFeeInr})`
-                  : `Authors pay ₹${previewInr} instead of ₹${baseFeeInr}`
+                  ? "Free - checkout is skipped entirely"
+                  : `Authors pay ${previewParts.join("; ")}`
               }
               fullWidth
             />
+            <TextField
+              select
+              label="Applies To"
+              value={form.appliesTo}
+              onChange={(e) => setForm({ ...form, appliesTo: e.target.value as CouponScope })}
+              helperText="A code limited to papers is rejected at book checkout, and vice versa"
+              fullWidth
+            >
+              {(Object.keys(SCOPE_LABELS) as CouponScope[]).map((k) => (
+                <MenuItem key={k} value={k}>
+                  {SCOPE_LABELS[k]}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Number of Uses"
               type="number"

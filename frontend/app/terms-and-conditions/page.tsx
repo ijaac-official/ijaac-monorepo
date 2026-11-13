@@ -1,12 +1,21 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import PolicyPage from "@/components/PolicyPage";
 
-export const metadata = { title: "Terms & Conditions - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Terms & Conditions",
+  description:
+    "Terms and conditions for submitting to and publishing in the International Journal of Applied AI & Computing (IJAAC).",
+  path: "/terms-and-conditions",
+});
 
 export default function TermsPage() {
   return (
+    <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Terms & Conditions", path: "/terms-and-conditions" }])} />
     <PolicyPage
       title="Terms & Conditions"
-      lastUpdated="12 November 2026"
+      lastUpdated="13 November 2026"
       sections={[
         {
           heading: "1. Acceptance of Terms",
@@ -27,9 +36,9 @@ export default function TermsPage() {
           ],
         },
         {
-          heading: "4. Submission Fees",
+          heading: "4. Publication Fee",
           body: [
-            "A manuscript processing fee is charged at the time of submission to cover editorial screening and processing costs. Fees are described on the submission page and are subject to change. See our Refund & Cancellation Policy for details on when fees may be refunded.",
+            "A publication fee of INR 1,200 is payable online at the time of submission. It covers editorial screening, peer-review coordination, typesetting, hosting and certificates. The fee is non-refundable once payment is confirmed, whatever the outcome of review; see our Refund & Cancellation Policy for how duplicate or erroneous charges are handled.",
           ],
         },
         {
@@ -39,20 +48,33 @@ export default function TermsPage() {
           ],
         },
         {
-          heading: "6. Limitation of Liability",
+          heading: "6. Use of Published Content",
+          body: [
+            "Readers may read, download, share and adapt published articles under the terms of CC BY 4.0, provided the original authors and IJAAC are credited. The IJAAC name, logo and website design are not covered by the CC BY licence and may not be used to suggest endorsement.",
+          ],
+        },
+        {
+          heading: "7. Website Use",
+          body: [
+            "You agree not to misuse this website, including by attempting to gain unauthorised access, submitting false information, uploading malicious files, or using automated means to overload the service. We may refuse or remove submissions that breach these terms.",
+          ],
+        },
+        {
+          heading: "8. Limitation of Liability",
           body: [
             "The journal and its editorial team make reasonable efforts to ensure the accuracy of published content but are not liable for errors, omissions, or any consequences arising from the use of published research.",
           ],
         },
         {
-          heading: "7. Governing Law",
+          heading: "9. Governing Law",
           body: ["These terms are governed by the laws of India."],
         },
         {
-          heading: "8. Contact",
+          heading: "10. Contact",
           body: ["Questions about these terms can be directed to ijaac.official@gmail.com."],
         },
       ]}
     />
+    </>
   );
 }

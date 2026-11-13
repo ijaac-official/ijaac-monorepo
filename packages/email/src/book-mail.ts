@@ -45,14 +45,17 @@ export async function sendBookSubmissionReceivedEmail(book: BookSubmission): Pro
   await send(
     book.email,
     {
-      subject: `Book manuscript received: "${book.title}"`,
+      subject: `Book publication request received: "${book.title}"`,
       html: emailLayout(
-        "Book Manuscript Received",
+        "Book Publication Request Received",
         `<p>Dear ${escapeHtml(book.authorName)},</p>
-         <p>Thank you for submitting your book manuscript to IJAAC Books:</p>
+         <p>Thank you for your book publication request with IJAAC Books:</p>
          ${titleLine(book)}
-         <p>Your submission is now <b>pending editorial review</b>. We will email you once the editorial team
-         has reviewed it.</p>
+         <p>IJAAC supports authors in publishing their books internationally, with editorial guidance and
+         formatting and preparation of the book for international publication. Published titles are listed on
+         the IJAAC Books page.</p>
+         <p><b>Next step:</b> our editorial office will contact you by email to collect your manuscript and
+         discuss the publication of your book. You do not need to send the manuscript until we contact you.</p>
          <p>Submission ID: <code>${escapeHtml(book.id)}</code></p>
          <p>Regards,<br/>Editorial Office</p>`
       ),
@@ -73,10 +76,11 @@ export async function sendBookSubmissionEditorNotification(book: BookSubmission)
   await send(
     editorEmail,
     {
-      subject: `New book manuscript: "${book.title}"`,
+      subject: `New book publication request: "${book.title}"`,
       html: emailLayout(
-        "New Book Manuscript Submitted",
-        `<p>A new book manuscript is awaiting review:</p>
+        "New Book Publication Request",
+        `<p>A new book publication request has been received. No manuscript file is uploaded online - please
+         contact the author by email to collect the manuscript and discuss the publication:</p>
          ${titleLine(book)}
          <p>Author: ${escapeHtml(book.authorName)} (${escapeHtml(book.email)}, ${escapeHtml(book.phone)})<br/>
          Category: ${escapeHtml(book.category ?? "-")}<br/>
@@ -137,14 +141,14 @@ export async function sendBookSubmissionDecisionEmail(
     ACCEPTED: {
       subject: `Your book has been accepted: "${book.title}"`,
       title: "Book Accepted",
-      body: `<p>We are pleased to inform you that your book manuscript has been <b>accepted</b> by the editorial
-             team. We will contact you about formatting and the next steps towards listing it on the IJAAC
-             Books page.</p>`,
+      body: `<p>We are pleased to inform you that your book publication request has been <b>accepted</b> by the
+             editorial team. We will contact you by email about editorial guidance, formatting and preparation of
+             your book for international publication, and listing it on the IJAAC Books page.</p>`,
     },
     REJECTED: {
-      subject: `Decision on your book manuscript: "${book.title}"`,
-      title: "Book Manuscript Decision",
-      body: `<p>After careful review, we regret to inform you that your book manuscript has <b>not been accepted</b>
+      subject: `Decision on your book publication request: "${book.title}"`,
+      title: "Book Publication Request Decision",
+      body: `<p>After careful review, we regret to inform you that your book publication request has <b>not been accepted</b>
              at this time.</p>`,
     },
     PUBLISHED: {
@@ -161,7 +165,7 @@ export async function sendBookSubmissionDecisionEmail(
       html: emailLayout(
         c.title,
         `<p>Dear ${escapeHtml(book.authorName)},</p>
-         <p>Regarding your book manuscript:</p>
+         <p>Regarding your book publication request:</p>
          ${titleLine(book)}
          ${c.body}
          ${comment}

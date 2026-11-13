@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
@@ -5,7 +7,12 @@ import { listPublishedPapersPage } from "@ijaac/data-store";
 import PageHero from "@/components/PageHero";
 import PublicationsList from "@/components/PublicationsList";
 
-export const metadata = { title: "All Publications - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "All Publications",
+  description:
+    "Search and browse all peer-reviewed, open-access articles published in the International Journal of Applied AI & Computing (IJAAC).",
+  path: "/publications",
+});
 export const revalidate = 0;
 
 async function PublicationsContent({
@@ -35,6 +42,7 @@ export default function PublicationsPage({
 }) {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Publications", path: "/publications" }])} />
       <PageHero
         title="All Publications"
         subtitle="Every peer-reviewed paper published by the journal."

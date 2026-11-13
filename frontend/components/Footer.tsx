@@ -20,6 +20,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
       ["Reviewers", "/reviewers"],
       ["Become a Reviewer", "/become-a-reviewer"],
       ["Author Guidelines", "/author-guidelines"],
+      ["FAQ", "/faq"],
     ],
   },
   {

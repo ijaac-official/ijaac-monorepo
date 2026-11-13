@@ -90,7 +90,7 @@ export default function PageHero({
         <Icon sx={{ fontSize: { xs: 160, md: 240 } }} />
       </Box>
       <Container maxWidth="lg" sx={{ position: "relative" }}>
-        <Typography variant="h3" fontWeight={700} gutterBottom sx={{ fontSize: { xs: "2rem", md: "3rem" }, maxWidth: 900 }}>
+        <Typography variant="h3" component="h1" fontWeight={700} gutterBottom sx={{ fontSize: { xs: "2rem", md: "3rem" }, maxWidth: 900 }}>
           {title}
         </Typography>
         {subtitle && (

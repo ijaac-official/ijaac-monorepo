@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
@@ -11,7 +13,12 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import PageHero from "@/components/PageHero";
 import ContactForm from "@/components/ContactForm";
 
-export const metadata = { title: "Contact - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Contact the Editorial Office",
+  description:
+    "Contact IJAAC about submissions, peer review, publication or payments. Email ijaac.official@gmail.com or use the contact form.",
+  path: "/contact",
+});
 
 const FAQS = [
   { q: "How long does review take?", a: "Most authors receive an initial decision within a few weeks." },
@@ -22,6 +29,7 @@ const FAQS = [
 export default function ContactPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Contact", path: "/contact" }])} />
       <PageHero
         title="Contact Us"
         subtitle="Questions about submissions, reviews, or publication? Reach out."

@@ -3,8 +3,8 @@ import { readSingleton, updateSingleton } from "../json-store";
 
 const NAME = "settings";
 
-/** Default book publication fee when neither settings.json nor BOOK_FEE_INR is set: Rs 4,999. */
-export const DEFAULT_BOOK_FEE_PAISE = 499900;
+/** Default book publication fee when neither settings.json nor BOOK_FEE_INR is set: Rs 5,999. */
+export const DEFAULT_BOOK_FEE_PAISE = 599900;
 /** Default paper submission fee when neither settings.json nor SUBMISSION_FEE_INR is set: Rs 1,200. */
 export const DEFAULT_PAPER_FEE_PAISE = 120000;
 
@@ -27,7 +27,10 @@ export function defaultSettings(): JournalSettings {
   };
 }
 
-/** Live fees. Any missing/invalid stored value falls back to the env default for that fee. */
+/**
+ * Live fees. settings.json may hold only some fields (or unrelated ones such as
+ * earlyBird*), so each missing/invalid fee falls back to its env/default value.
+ */
 export async function getSettings(): Promise<JournalSettings> {
   const defaults = defaultSettings();
   const stored = await readSingleton<Partial<JournalSettings> | null>(NAME, null);
@@ -59,7 +62,7 @@ export async function updateSettings(
   }
   const defaults = defaultSettings();
   let next: JournalSettings = defaults;
-  await updateSingleton<Partial<JournalSettings> | null>(NAME, null, (current) => {
+  await updateSingleton<(Partial<JournalSettings> & Record<string, unknown>) | null>(NAME, null, (current) => {
     const base = current ?? {};
     next = {
       paperFeeInPaise:
@@ -70,7 +73,8 @@ export async function updateSettings(
       updatedAt: new Date().toISOString(),
       updatedById: patch.updatedById ?? base.updatedById,
     };
-    return next;
+    // Keep any other fields already stored (e.g. earlyBirdEnabled, earlyBirdCouponCode).
+    return { ...base, ...next };
   });
   return next;
 }

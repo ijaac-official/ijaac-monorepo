@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { couponUpdateSchema } from "@ijaac/shared";
+import { couponScopeSchema, couponUpdateSchema } from "@ijaac/shared";
 import { deleteCoupon, listCoupons, updateCoupon } from "@ijaac/data-store";
 import { requireSession } from "@/lib/requireSession";
 
@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const json = await req.json().catch(() => null);
-  const parsed = couponUpdateSchema.safeParse(json);
+  const parsed = couponUpdateSchema.extend({ appliesTo: couponScopeSchema.optional() }).safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }

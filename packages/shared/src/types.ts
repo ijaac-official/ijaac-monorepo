@@ -324,10 +324,14 @@ export interface BookSubmission {
   category?: string;
   synopsis: string;
   pageCount?: number;
-  manuscriptKey: string;
-  manuscriptName: string;
-  manuscriptType: string;
-  manuscriptSize: number;
+  /**
+   * Legacy only: early book requests uploaded a manuscript file. New requests do not -
+   * the editorial office collects the manuscript from the author by email.
+   */
+  manuscriptKey?: string;
+  manuscriptName?: string;
+  manuscriptType?: string;
+  manuscriptSize?: number;
   coverKey?: string;
   coverType?: string;
   status: BookSubmissionStatus;

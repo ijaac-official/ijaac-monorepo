@@ -30,6 +30,8 @@ import QrCode2Icon from "@mui/icons-material/QrCode2";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 const DRAWER_WIDTH = 240;
 
@@ -39,12 +41,14 @@ const NAV_ITEMS = [
   { label: "Add Paper", href: "/submissions/new", icon: <NoteAddIcon /> },
   { label: "Issues", href: "/issues", icon: <CollectionsBookmarkIcon /> },
   { label: "Books", href: "/books", icon: <MenuBookIcon /> },
+  { label: "Book Submissions", href: "/book-submissions", icon: <LibraryBooksIcon /> },
   { label: "Reviewers", href: "/reviewers", icon: <PeopleIcon /> },
   { label: "Reviewer Applications", href: "/reviewers/applications", icon: <HowToRegIcon /> },
   { label: "Editorial Board", href: "/editorial-board", icon: <Groups2Icon /> },
   { label: "Certificates", href: "/certificates", icon: <WorkspacePremiumIcon /> },
   { label: "Promotions", href: "/promotions", icon: <LocalOfferIcon /> },
   { label: "Payments", href: "/payments", icon: <QrCode2Icon /> },
+  { label: "Fees & Charges", href: "/settings", icon: <SettingsIcon /> },
 ];
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {

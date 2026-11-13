@@ -194,7 +194,6 @@ export const settingsUpdateSchema = z
   .partial()
   .refine((v) => v.paperFeeInr !== undefined || v.bookFeeInr !== undefined, { message: "Nothing to update" });
 
-export const MAX_BOOK_MANUSCRIPT_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 export const MAX_BOOK_COVER_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 /** Largest file that may be sent in a multipart request body when the direct S3 upload fails. */
 export const MULTIPART_FALLBACK_MAX_BYTES = 4 * 1024 * 1024; // 4 MB

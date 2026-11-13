@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Box from "@mui/material/Box";
@@ -14,7 +16,12 @@ import PersonCard from "@/components/PersonCard";
 import PageHero from "@/components/PageHero";
 import MotionCard from "@/components/MotionCard";
 
-export const metadata = { title: "Reviewers - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Reviewer Panel",
+  description:
+    "The IJAAC reviewer panel: verified experts in AI, machine learning, data science and computing who carry out double-blind peer review for the journal.",
+  path: "/reviewers",
+});
 export const revalidate = 0;
 
 function BecomeReviewerCta() {
@@ -104,6 +111,7 @@ async function ReviewersContent() {
 export default function ReviewersPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Reviewers", path: "/reviewers" }])} />
       <PageHero
         title="Reviewer Panel"
         subtitle="Our papers are reviewed by subject-matter experts from leading institutions worldwide."

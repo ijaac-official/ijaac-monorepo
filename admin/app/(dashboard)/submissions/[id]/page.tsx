@@ -52,7 +52,7 @@ export default async function SubmissionDetailPage({ params }: { params: { id: s
         sx={{ mb: 3 }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h5" fontWeight={600} gutterBottom>
+          <Typography variant="h5" fontWeight={600} gutterBottom sx={{ overflowWrap: "anywhere" }}>
             {s.title}
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -62,7 +62,7 @@ export default async function SubmissionDetailPage({ params }: { params: { id: s
             {!isPublic && <Chip label="Private" size="small" variant="outlined" color="warning" />}
           </Stack>
         </Box>
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ flexShrink: 0 }}>
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ flexShrink: 0, maxWidth: "100%" }}>
           <VisibilityToggle submissionId={s.id} isPublic={isPublic} showLabel size="medium" />
           <SubmissionEditDialog submission={s} issues={issues} />
         </Stack>
@@ -95,7 +95,7 @@ export default async function SubmissionDetailPage({ params }: { params: { id: s
               Authors
             </Typography>
             {s.authors.map((a, i) => (
-              <Typography key={`${a.email}-${i}`} variant="body2" sx={{ mb: 0.5 }}>
+              <Typography key={`${a.email}-${i}`} variant="body2" sx={{ mb: 0.5, overflowWrap: "anywhere" }}>
                 {i + 1}. {a.name} ({a.email}){a.affiliation ? ` - ${a.affiliation}` : ""}
                 {a.isCorresponding ? " - Corresponding" : ""}
               </Typography>
@@ -192,7 +192,7 @@ export default async function SubmissionDetailPage({ params }: { params: { id: s
                 label={`${s.couponCode}${s.discountPercent ? ` - ${s.discountPercent}% off` : ""}`}
                 size="small"
                 color="secondary"
-                sx={{ mt: 1 }}
+                sx={{ mt: 1, maxWidth: "100%" }}
               />
             )}
           </Paper>

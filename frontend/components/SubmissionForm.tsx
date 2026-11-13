@@ -30,6 +30,7 @@ import {
   checkManuscriptMeta,
   normalizeSubmissionInput,
 } from "@/app/submit-paper/manuscript-checks";
+import { directUpload, type UploadedRef } from "@/lib/direct-upload";
 
 declare global {
   interface Window {
@@ -183,9 +184,12 @@ export default function SubmissionForm() {
    * fix the problem and resubmit without paying twice.
    */
   const pendingPaymentRef = React.useRef<RazorpayResponse | null>(null);
+  /** The selected file once it has been PUT to S3 (ref null = send it in the body instead). */
+  const uploadRef = React.useRef<{ file: File; ref: UploadedRef | null } | null>(null);
+  const [uploadPct, setUploadPct] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    fetch("/api/payment/quote")
+    fetch("/api/payment/quote?kind=PAPER")
       .then((r) => r.json())
       .then((q) => setBaseFee(q.baseAmountPaise ?? null))
       .catch(() => undefined);
@@ -231,7 +235,7 @@ export default function SubmissionForm() {
     }
     setApplying(true);
     try {
-      const res = await fetch(`/api/payment/quote?coupon=${encodeURIComponent(code)}`);
+      const res = await fetch(`/api/payment/quote?kind=PAPER&coupon=${encodeURIComponent(code)}`);
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setQuoteInfo(null);
@@ -283,6 +287,7 @@ export default function SubmissionForm() {
         return;
       }
       setFileError(null);
+      uploadRef.current = null;
       setFile(f);
     } catch {
       setFileError("Could not read the selected file. Please choose it again.");
@@ -343,7 +348,14 @@ export default function SubmissionForm() {
       formData.append("payload", JSON.stringify(parsed.data));
       if (extra.payment) formData.append("payment", JSON.stringify(extra.payment));
       if (extra.couponCode) formData.append("couponCode", extra.couponCode);
-      formData.append("file", file);
+      const uploaded = uploadRef.current?.file === file ? uploadRef.current.ref : null;
+      if (uploaded) {
+        formData.append("fileKey", uploaded.key);
+        formData.append("fileToken", uploaded.token);
+        formData.append("fileName", uploaded.name);
+      } else {
+        formData.append("file", file);
+      }
 
       const res = await fetch("/api/submissions", { method: "POST", body: formData });
       if (!res.ok) {
@@ -363,6 +375,19 @@ export default function SubmissionForm() {
     };
 
     try {
+      // Upload the manuscript straight to S3 first (presigned PUT). If that fails
+      // and the file is small, it is sent in the request body instead.
+      if (uploadRef.current?.file !== file) {
+        setUploadPct(0);
+        try {
+          const result = await directUpload("paper-manuscript", file, setUploadPct);
+          uploadRef.current = { file, ref: result.mode === "direct" ? result.ref : null };
+        } finally {
+          setUploadPct(null);
+        }
+      }
+      const uploadedRef = uploadRef.current?.ref ?? null;
+
       // Already paid in an earlier attempt whose upload failed: reuse that payment.
       if (pendingPaymentRef.current) {
         await submit({ payment: pendingPaymentRef.current });
@@ -376,10 +401,16 @@ export default function SubmissionForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          kind: "PAPER",
           couponCode,
           consent: true,
           submission: parsed.data,
-          file: { name: file.name, size: file.size, type: file.type },
+          file: {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            ...(uploadedRef ? { key: uploadedRef.key, token: uploadedRef.token } : {}),
+          },
         }),
       });
       if (!orderRes.ok) {
@@ -438,6 +469,8 @@ export default function SubmissionForm() {
         enqueueSnackbar("Payment was cancelled. Your details are still here.", { variant: "warning" });
         return;
       }
+      // The stored upload may have been consumed or rejected - upload afresh on retry.
+      uploadRef.current = null;
       const message = err instanceof Error ? err.message : "Submission failed";
       const paidNote = pendingPaymentRef.current
         ? " Your payment was received - fix the issue and submit again; you will not be charged twice."
@@ -752,7 +785,7 @@ export default function SubmissionForm() {
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
             {payable === 0
               ? "Your coupon covers the full fee - no payment needed."
-              : "You'll pay securely via Razorpay before your manuscript is uploaded. A receipt is emailed after payment. Fees are non-refundable."}
+              : "Your manuscript is uploaded securely first, then you pay via Razorpay. A receipt is emailed after payment. Fees are non-refundable."}
           </Typography>
         </Paper>
 
@@ -789,7 +822,9 @@ export default function SubmissionForm() {
           disabled={submitting || checkingFile}
           startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
         >
-          {submitting
+          {uploadPct !== null
+            ? `Uploading manuscript... ${uploadPct}%`
+            : submitting
             ? "Processing..."
             : pendingPaymentRef.current
               ? "Retry Submission (already paid)"

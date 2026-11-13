@@ -28,14 +28,15 @@ export const revalidate = 0;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const record = await loadPublicationRecord(safeDecode(params.id));
-  if (!record) return { title: "Publication record not found - IJAAC", robots: { index: false } };
+  if (!record) return { title: "Publication record not found", robots: { index: false } };
   const title = `Verified publication: ${record.title} | IJAAC`;
   const description = `${record.authors.map((a) => a.name).join(", ")}. Published in ${JOURNAL_NAME}, ${record.issueLabel}.`;
   const url = publicationCredentialPageUrl(record.id);
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
+    robots: { index: true, follow: true },
     openGraph: {
       type: "article",
       url,

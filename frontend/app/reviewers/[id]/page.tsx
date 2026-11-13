@@ -23,24 +23,54 @@ import { isApprovedReviewer } from "@ijaac/shared";
 import type { Reviewer } from "@ijaac/shared";
 import { getReviewer, listAllSubmissionsRaw } from "@ijaac/data-store";
 import ReviewerStatTile from "@/components/reviewers/ReviewerStatTile";
+import JsonLd from "@/components/JsonLd";
+import { ORGANIZATION_ID, absoluteUrl, breadcrumbJsonLd, clip, pageMetadata } from "@/lib/seo";
+import { cache } from "react";
 
 export const revalidate = 0;
 
-async function getPublicReviewer(id: string): Promise<Reviewer | null> {
+const getPublicReviewer = cache(async (id: string): Promise<Reviewer | null> => {
   const r = await getReviewer(id).catch(() => null);
   if (!r || !r.isActive || !isApprovedReviewer(r)) return null;
   return r;
-}
+});
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const r = await getPublicReviewer(params.id);
-  if (!r) return { title: "Reviewer not found - IJAAC Journal" };
+  if (!r) return { title: "Reviewer not found", robots: { index: false } };
   const role = [r.designation, r.affiliation].filter(Boolean).join(", ");
-  return {
-    title: `${r.name} - IJAAC Reviewer`,
-    description: `${r.name}${role ? `, ${role}` : ""} is a verified reviewer for IJAAC${
+  const description = clip(
+    `${r.name}${role ? `, ${role}` : ""} is a verified reviewer for the International Journal of Applied AI & Computing (IJAAC)${
       r.areasOfInterest.length ? `, with expertise in ${r.areasOfInterest.slice(0, 5).join(", ")}` : ""
-    }.`,
+    }.`
+  );
+  const meta = pageMetadata({
+    title: `${r.name} - Reviewer Profile`,
+    description,
+    path: `/reviewers/${encodeURIComponent(r.id)}`,
+    ogType: "profile",
+  });
+  return r.photoUrl && !r.photoUrl.includes("placehold.co")
+    ? { ...meta, openGraph: { ...meta.openGraph, images: [{ url: r.photoUrl, alt: r.name }] } }
+    : meta;
+}
+
+function personJsonLd(r: Reviewer) {
+  const url = absoluteUrl(`/reviewers/${encodeURIComponent(r.id)}`);
+  const sameAs = [r.linkedinUrl, r.orcid ? orcidHref(r.orcid) : undefined].filter(Boolean);
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": `${url}#person`,
+    name: r.name,
+    url,
+    ...(r.photoUrl && !r.photoUrl.includes("placehold.co") ? { image: r.photoUrl } : {}),
+    ...(r.designation ? { jobTitle: r.designation } : {}),
+    ...(r.affiliation ? { affiliation: { "@type": "Organization", name: r.affiliation } } : {}),
+    ...(r.areasOfInterest.length ? { knowsAbout: r.areasOfInterest } : {}),
+    ...(r.bio ? { description: clip(r.bio, 300) } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+    memberOf: { "@id": ORGANIZATION_ID },
   };
 }
 
@@ -72,6 +102,15 @@ export default async function ReviewerProfilePage({ params }: { params: { id: st
 
   return (
     <>
+      <JsonLd
+        data={[
+          personJsonLd(reviewer),
+          breadcrumbJsonLd([
+            { name: "Reviewers", path: "/reviewers" },
+            { name: reviewer.name, path: `/reviewers/${encodeURIComponent(reviewer.id)}` },
+          ]),
+        ]}
+      />
       <Box
         sx={{
           bgcolor: "primary.dark",

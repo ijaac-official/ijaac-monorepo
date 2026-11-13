@@ -1,25 +1,21 @@
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   formatInr,
-  paymentVerificationSchema,
   submissionFormSchema,
   type Submission,
 } from "@ijaac/shared";
 import { S3_PREFIXES, putObjectBuffer } from "@ijaac/aws";
-import {
-  createSubmission,
-  isPaymentOrderUsed,
-  recordPaidRedemption,
-  redeemCoupon,
-} from "@ijaac/data-store";
+import { createSubmission, recordPaidRedemption, redeemCoupon } from "@ijaac/data-store";
 import {
   sendPaymentReceiptEmail,
   sendSubmissionEditorNotification,
   sendSubmissionReceivedEmail,
 } from "@ijaac/email";
 import { generateReceiptPdf } from "@ijaac/certificate";
-import { baseFeePaise, getRazorpay, quote } from "@/lib/pricing";
+import { quote } from "@/lib/pricing";
+import { verifyRazorpayPayment } from "@/lib/payment-verify";
+import { displayName, promoteUpload, verifyUpload } from "@/lib/uploads";
 import {
   MANUSCRIPT_MIME,
   checkManuscriptBytes,
@@ -47,8 +43,13 @@ export async function POST(req: NextRequest) {
   const paymentRaw = formData.get("payment");
   const couponCodeRaw = formData.get("couponCode");
   const file = formData.get("file");
+  // Preferred path: the browser already PUT the file to S3 via /api/uploads/upload-url.
+  const fileKeyRaw = formData.get("fileKey");
+  const fileTokenRaw = formData.get("fileToken");
+  const fileNameRaw = formData.get("fileName");
+  const direct = typeof fileKeyRaw === "string" && fileKeyRaw.length > 0;
 
-  if (typeof payloadRaw !== "string" || !(file instanceof File)) return fail("Missing form fields");
+  if (typeof payloadRaw !== "string" || (!direct && !(file instanceof File))) return fail("Missing form fields");
 
   let payloadJson: unknown;
   try {
@@ -68,13 +69,37 @@ export async function POST(req: NextRequest) {
   // File checks happen BEFORE any coupon is redeemed or payment is consumed:
   // non-empty, allowed extension/MIME, size limit, and magic bytes that match
   // the extension (%PDF, D0 CF 11 E0 for .doc, PK zip for .docx).
-  const metaError = checkManuscriptMeta(file);
-  if (metaError) return fail(metaError);
-  const buffer = Buffer.from(await file.arrayBuffer());
-  if (buffer.length === 0) return fail("The selected file is empty.");
-  const bytesError = checkManuscriptBytes(file.name, new Uint8Array(buffer.subarray(0, 1024)));
-  if (bytesError) return fail(bytesError);
-  const fileKind = kindFromName(file.name)!;
+  // Direct uploads: the key must be one we issued (HMAC token) under the pending
+  // prefix, and the stored object is checked with HeadObject (exists, size) and a
+  // ranged GET of its first bytes (magic bytes).
+  let buffer: Buffer | null = null;
+  let pendingKey: string | null = null;
+  let originalName: string;
+  let fileSize: number;
+  if (direct) {
+    let verified;
+    try {
+      verified = await verifyUpload("paper-manuscript", fileKeyRaw, fileTokenRaw);
+    } catch (err) {
+      console.error("Upload verification failed", err);
+      return fail("Could not verify the uploaded file, please try again", 502);
+    }
+    if (!verified.ok) return fail(verified.error);
+    pendingKey = verified.key;
+    originalName = displayName(fileNameRaw, verified.key);
+    fileSize = verified.size;
+  } else {
+    const f = file as File;
+    const metaError = checkManuscriptMeta(f);
+    if (metaError) return fail(metaError);
+    buffer = Buffer.from(await f.arrayBuffer());
+    if (buffer.length === 0) return fail("The selected file is empty.");
+    const bytesError = checkManuscriptBytes(f.name, new Uint8Array(buffer.subarray(0, 1024)));
+    if (bytesError) return fail(bytesError);
+    originalName = f.name;
+    fileSize = buffer.length;
+  }
+  const fileKind = kindFromName(originalName)!;
   const fileType = MANUSCRIPT_MIME[fileKind];
 
   let paymentRecord: PaymentRecord | undefined;
@@ -83,62 +108,31 @@ export async function POST(req: NextRequest) {
 
   if (typeof paymentRaw === "string") {
     // --- Paid path (full price or partial discount) -----------------------
-    let paymentJson: unknown;
-    try {
-      paymentJson = JSON.parse(paymentRaw);
-    } catch {
-      return fail("Malformed payload");
-    }
-    const payment = paymentVerificationSchema.safeParse(paymentJson);
-    if (!payment.success) return fail("Missing or invalid payment details");
+    // Signature, cross-collection replay guard, Razorpay-side amount/status,
+    // order kind (PAPER) and server-computed price are all checked here.
+    const verified = await verifyRazorpayPayment(paymentRaw, "PAPER");
+    if (!verified.ok) return fail(verified.error, verified.status);
+    const v = verified.payment;
 
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keySecret) return fail("Payment gateway is not configured", 500);
-
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = payment.data;
-    const expectedSignature = createHmac("sha256", keySecret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
-    if (expectedSignature !== razorpay_signature) return fail("Payment verification failed", 402);
-
-    if (await isPaymentOrderUsed(razorpay_order_id)) {
-      return fail("This payment has already been used for a submission", 409);
-    }
-
-    // Amount and coupon come from Razorpay's own records of an order our
-    // server created, never from the client.
-    const razorpay = getRazorpay();
-    const [rzpPayment, rzpOrder] = await Promise.all([
-      razorpay.payments.fetch(razorpay_payment_id),
-      razorpay.orders.fetch(razorpay_order_id),
-    ]);
-    if (
-      rzpPayment.order_id !== razorpay_order_id ||
-      !["authorized", "captured"].includes(rzpPayment.status)
-    ) {
-      return fail("Payment could not be confirmed", 402);
-    }
-
-    const notes = (rzpOrder.notes ?? {}) as Record<string, string>;
-    couponCode = notes.couponCode || undefined;
-    discountPercent = notes.discountPercent ? Number(notes.discountPercent) : undefined;
+    couponCode = v.couponCode;
+    discountPercent = v.discountPercent;
     if (couponCode) await recordPaidRedemption(couponCode);
 
     paymentRecord = {
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id,
-      amountInPaise: Number(rzpPayment.amount),
-      baseAmountInPaise: baseFeePaise(),
-      currency: rzpPayment.currency,
+      orderId: v.orderId,
+      paymentId: v.paymentId,
+      amountInPaise: v.amountInPaise,
+      baseAmountInPaise: v.baseAmountInPaise,
+      currency: v.currency,
       paidAt: new Date().toISOString(),
     };
   } else if (typeof couponCodeRaw === "string" && couponCodeRaw.trim()) {
     // --- Free path: only a 100% coupon skips checkout -----------------------
-    const priced = await quote(couponCodeRaw);
+    const priced = await quote(couponCodeRaw, "PAPER");
     if (!priced.ok) return fail(priced.error);
     if (priced.finalAmountPaise > 0) return fail("This coupon is a partial discount - payment is required");
 
-    const redemption = await redeemCoupon(couponCodeRaw);
+    const redemption = await redeemCoupon(couponCodeRaw, "PAPER");
     if (!redemption.ok) return fail(redemption.reason);
     couponCode = redemption.coupon.code;
     discountPercent = redemption.coupon.discountPercent;
@@ -146,10 +140,11 @@ export async function POST(req: NextRequest) {
     return fail("Missing payment details");
   }
 
-  const fileKey = `${S3_PREFIXES.manuscripts}${randomUUID()}/${sanitizeFileName(file.name)}`;
+  const fileKey = `${S3_PREFIXES.manuscripts}${randomUUID()}/${sanitizeFileName(originalName)}`;
 
   try {
-    await putObjectBuffer(fileKey, buffer, fileType);
+    if (pendingKey) await promoteUpload(pendingKey, fileKey);
+    else await putObjectBuffer(fileKey, buffer!, fileType);
   } catch (err) {
     console.error("S3 upload failed", err);
     return fail("File upload failed, please try again", 502);
@@ -165,9 +160,9 @@ export async function POST(req: NextRequest) {
     ...parsed.data,
     id: submissionId,
     fileKey,
-    fileName: file.name,
+    fileName: originalName,
     fileType,
-    fileSize: buffer.length,
+    fileSize,
     payment: paymentRecord,
     couponCode,
     discountPercent,

@@ -56,7 +56,10 @@ export function detectKindFromBytes(bytes: Uint8Array): ManuscriptKind | null {
  * Checks file metadata (name/size/type) without reading contents.
  * Returns an error message, or null if the metadata is acceptable.
  */
-export function checkManuscriptMeta(file: { name: string; size: number; type: string }): string | null {
+export function checkManuscriptMeta(
+  file: { name: string; size: number; type: string },
+  maxBytes: number = MAX_MANUSCRIPT_SIZE_BYTES
+): string | null {
   if (!file.name?.trim()) return "Please attach your manuscript file.";
   const byName = kindFromName(file.name);
   if (!byName) return "Only PDF, DOC, or DOCX files are supported.";
@@ -67,8 +70,8 @@ export function checkManuscriptMeta(file: { name: string; size: number; type: st
     if (byMime !== byName) return "The file extension does not match its type.";
   }
   if (!Number.isFinite(file.size) || file.size <= 0) return "The selected file is empty.";
-  if (file.size > MAX_MANUSCRIPT_SIZE_BYTES) {
-    return `File must be smaller than ${MAX_MANUSCRIPT_MB} MB.`;
+  if (file.size > maxBytes) {
+    return `File must be smaller than ${Math.round(maxBytes / (1024 * 1024))} MB.`;
   }
   return null;
 }
@@ -84,6 +87,20 @@ export function checkManuscriptBytes(name: string, head: Uint8Array): string | n
   return null;
 }
 
+/**
+ * A file the browser either already PUT to S3 (key + token from /api/uploads/upload-url)
+ * or will send in the multipart body (no key) when the direct upload failed.
+ */
+export function uploadedFileDescriptorSchema(missingMessage: string) {
+  return z.object({
+    name: z.string().min(1, missingMessage),
+    size: z.number(),
+    type: z.string(),
+    key: z.string().max(400).optional(),
+    token: z.string().max(200).optional(),
+  });
+}
+
 /** Metadata sent to create-order before checkout (no file contents). */
 export const checkoutPrevalidationSchema = z.object({
   couponCode: z.string().trim().max(64).optional(),
@@ -91,11 +108,7 @@ export const checkoutPrevalidationSchema = z.object({
     errorMap: () => ({ message: "Please accept the terms and the non-refundable fee policy" }),
   }),
   submission: submissionFormSchema,
-  file: z.object({
-    name: z.string().min(1, "Please attach your manuscript file."),
-    size: z.number(),
-    type: z.string(),
-  }),
+  file: uploadedFileDescriptorSchema("Please attach your manuscript file."),
 });
 
 export type CheckoutPrevalidation = z.infer<typeof checkoutPrevalidationSchema>;

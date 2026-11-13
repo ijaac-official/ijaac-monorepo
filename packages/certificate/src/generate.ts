@@ -44,8 +44,10 @@ export interface CertificateInput {
   backgroundPng?: Uint8Array;
   /** Opacity for `backgroundPng` (0-1). Default 0.12. */
   backgroundOpacity?: number;
-  /** Printed above the signature line when provided. */
+  /** Editor-in-Chief name. Printed under the signature line (or above it when there is no signature image). */
   editorInChiefName?: string;
+  /** Optional transparent PNG of the Editor-in-Chief's handwritten signature, drawn above the line. */
+  signaturePng?: Uint8Array;
 }
 
 const JOURNAL_NAME_DEFAULT = "International Journal of Applied AI & Computing";
@@ -202,15 +204,28 @@ export async function generateCertificatePdf(input: CertificateInput): Promise<U
   page.drawLine({ start: { x: leftC - blockW / 2, y: lineY }, end: { x: leftC + blockW / 2, y: lineY }, thickness: 0.8, color: ink });
   centerText(page, "Date of Issue", sansBold, 10.5, lineY - 15, crimson, leftC);
 
-  if (editorName) {
+  const signature = await embedPngSafe(doc, input.signaturePng);
+  if (signature) {
+    // Handwritten signature sitting on the line, shifted right to clear the seal.
+    const sigH = 40;
+    const sigW = Math.min((signature.width / signature.height) * sigH, blockW - 50);
+    const h = (sigW / signature.width) * signature.height;
+    page.drawImage(signature, { x: rightC + 18 - sigW / 2, y: lineY - 4, width: sigW, height: h });
+  } else if (editorName) {
     // Keep clear of the seal's right edge.
     const maxW = 2 * (blockW / 2 + 36 - 50 - 6);
     const s = fitSize(editorName, serifItalic, 13, maxW, 9);
     centerText(page, truncateToWidth(editorName, serifItalic, s, maxW), serifItalic, s, lineY + 7, ink, rightC);
   }
   page.drawLine({ start: { x: rightC - blockW / 2, y: lineY }, end: { x: rightC + blockW / 2, y: lineY }, thickness: 0.8, color: ink });
-  centerText(page, "Editor-in-Chief", sansBold, 10.5, lineY - 15, crimson, rightC);
-  centerText(page, "IJAAC", sans, 8, lineY - 27, gray, rightC);
+  if (signature && editorName) {
+    const nameS = fitSize(editorName, sansBold, 10.5, blockW, 8);
+    centerText(page, truncateToWidth(editorName, sansBold, nameS, blockW), sansBold, nameS, lineY - 15, crimson, rightC);
+    centerText(page, "Editor-in-Chief, IJAAC", sans, 8.5, lineY - 27, gray, rightC);
+  } else {
+    centerText(page, "Editor-in-Chief", sansBold, 10.5, lineY - 15, crimson, rightC);
+    centerText(page, "IJAAC", sans, 8, lineY - 27, gray, rightC);
+  }
 
   // Seal just left of the signature line, overlapping its start like a real
   // stamp; drawn after the line so it sits on top.

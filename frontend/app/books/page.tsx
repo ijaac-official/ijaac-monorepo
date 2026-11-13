@@ -1,3 +1,5 @@
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
@@ -7,8 +9,14 @@ import { listBooks } from "@ijaac/data-store";
 import BookCard from "@/components/BookCard";
 import PageHero from "@/components/PageHero";
 import MotionCard from "@/components/MotionCard";
+import PublishBookSection from "@/components/PublishBookSection";
 
-export const metadata = { title: "Books - IJAAC Journal" };
+export const metadata = pageMetadata({
+  title: "Books",
+  description:
+    "Books on applied AI and computing authored or edited by members of the IJAAC editorial and reviewer community.",
+  path: "/books",
+});
 export const revalidate = 0;
 
 async function BooksContent() {
@@ -38,6 +46,7 @@ async function BooksContent() {
 export default function BooksPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Books", path: "/books" }])} />
       <PageHero
         title="Published Books"
         subtitle="Books authored or edited by our editorial and reviewer community."
@@ -45,6 +54,9 @@ export default function BooksPage() {
       />
       <Suspense fallback={<CardGridSkeleton bare count={6} />}>
         <BooksContent />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PublishBookSection />
       </Suspense>
     </>
   );

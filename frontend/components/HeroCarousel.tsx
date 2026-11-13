@@ -121,6 +121,7 @@ export default function HeroCarousel() {
           </Typography>
           <Typography
             variant="h3"
+            component="h2"
             fontWeight={700}
             gutterBottom
             sx={{ mt: 1, fontSize: { xs: "1.6rem", sm: "2.2rem", md: "3rem" }, lineHeight: 1.2 }}
