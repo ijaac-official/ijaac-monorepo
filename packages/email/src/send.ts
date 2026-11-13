@@ -81,14 +81,26 @@ export interface CertificateAttachment {
   authorEmail: string;
   authorName: string;
   certificatePdf: Uint8Array;
-  manuscript: { buffer: Buffer; fileName: string };
+  /** Defaults to "certificate-of-publication.pdf" */
+  certificateFileName?: string;
+  /** The paper: typeset published PDF if available, else the original manuscript. */
+  manuscript: { buffer: Buffer; fileName: string; contentType?: string };
+  credentialUrl?: string;
+  credentialLive?: boolean;
+  paperKind?: "published" | "manuscript";
+  issueLabel?: string;
 }
 
 export async function sendCertificateEmail(
   paperTitle: string,
   attachment: CertificateAttachment
 ): Promise<void> {
-  const { subject, html } = certificateEmailTemplate(attachment.authorName, paperTitle);
+  const { subject, html } = certificateEmailTemplate(attachment.authorName, paperTitle, {
+    credentialUrl: attachment.credentialUrl,
+    credentialLive: attachment.credentialLive,
+    paperKind: attachment.paperKind,
+    issueLabel: attachment.issueLabel,
+  });
   await getTransporter().sendMail({
     from: getFromAddress(),
     to: attachment.authorEmail,
@@ -96,13 +108,14 @@ export async function sendCertificateEmail(
     html,
     attachments: [
       {
-        filename: "certificate-of-publication.pdf",
+        filename: attachment.certificateFileName ?? "certificate-of-publication.pdf",
         content: Buffer.from(attachment.certificatePdf),
         contentType: "application/pdf",
       },
       {
         filename: attachment.manuscript.fileName,
         content: attachment.manuscript.buffer,
+        ...(attachment.manuscript.contentType ? { contentType: attachment.manuscript.contentType } : {}),
       },
     ],
   });

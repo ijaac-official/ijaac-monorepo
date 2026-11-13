@@ -18,7 +18,7 @@ export default function PolicyPage({
 }) {
   return (
     <>
-      <PageHero title={title} />
+      <PageHero title={title} icon="policy" />
       <Container maxWidth="md" sx={{ py: 6 }}>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 4 }}>
           Last updated: {lastUpdated}

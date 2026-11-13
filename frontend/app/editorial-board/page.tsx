@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
@@ -17,7 +19,7 @@ const ROLE_LABELS: Record<string, string> = {
   ADVISORY_BOARD: "Advisory Board",
 };
 
-export default async function EditorialBoardPage() {
+async function EditorialBoardContent() {
   const members = await listEditorialBoard({ activeOnly: true }).catch(() => []);
   const grouped = members.reduce<Record<string, EditorialBoardMember[]>>((acc, m) => {
     (acc[m.role] ??= []).push(m);
@@ -26,11 +28,6 @@ export default async function EditorialBoardPage() {
 
   return (
     <>
-      <PageHero
-        title="Editorial Board"
-        subtitle="Meet the editors and board members who guide the journal's academic standards."
-        image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=80"
-      />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         {Object.entries(ROLE_LABELS).map(([role, label]) =>
           grouped[role]?.length ? (
@@ -64,6 +61,22 @@ export default async function EditorialBoardPage() {
           </Typography>
         )}
       </Container>
+    </>
+  );
+}
+
+/** Banner renders immediately; only the S3-backed content waits behind a skeleton. */
+export default function EditorialBoardPage() {
+  return (
+    <>
+      <PageHero
+        title="Editorial Board"
+        subtitle="Meet the editors and board members who guide the journal's academic standards."
+        icon="board"
+      />
+      <Suspense fallback={<CardGridSkeleton bare count={6} />}>
+        <EditorialBoardContent />
+      </Suspense>
     </>
   );
 }

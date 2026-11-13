@@ -1,13 +1,10 @@
 "use client";
 
+import SecurePaymentBadge from "@/components/SecurePaymentBadge";
 import * as React from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import {
-  ACCEPTED_MANUSCRIPT_MIME_TYPES,
-  MAX_MANUSCRIPT_SIZE_BYTES,
-  formatInr,
-  submissionFormSchema,
-} from "@ijaac/shared";
+import { useFieldArray, useForm, type FieldErrors, type Resolver } from "react-hook-form";
+import { useSnackbar } from "notistack";
+import { formatInr, submissionFormSchema, type SubmissionFormInput } from "@ijaac/shared";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -18,11 +15,21 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import FormHelperText from "@mui/material/FormHelperText";
 import CircularProgress from "@mui/material/CircularProgress";
+import MuiLink from "@mui/material/Link";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import Script from "next/script";
+import NextLink from "next/link";
+import {
+  MAX_MANUSCRIPT_MB,
+  checkManuscriptBytes,
+  checkManuscriptMeta,
+  normalizeSubmissionInput,
+} from "@/app/submit-paper/manuscript-checks";
 
 declare global {
   interface Window {
@@ -35,12 +42,24 @@ interface FormValues {
   abstract: string;
   keywordsInput: string;
   correspondingEmail: string;
-  correspondingPhone?: string;
+  correspondingPhone: string;
   couponCode?: string;
+  consent: boolean;
   authors: { name: string; email: string; affiliation?: string; isCorresponding?: boolean }[];
 }
 
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 const ACCEPT_ATTR = ".pdf,.doc,.docx";
+const ABSTRACT_MIN = 100;
+const ABSTRACT_MAX = 5000;
+const KEYWORDS_MIN = 3;
+const KEYWORDS_MAX = 10;
+const FILE_SECTION_ID = "manuscript-file-section";
 
 interface QuoteInfo {
   baseAmountPaise: number;
@@ -49,9 +68,107 @@ interface QuoteInfo {
   couponCode?: string;
 }
 
+class CancelledError extends Error {}
+
+function splitKeywords(input: string | undefined): string[] {
+  return (input ?? "")
+    .split(/[,;\n]/)
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+function toPayload(values: FormValues): SubmissionFormInput {
+  return normalizeSubmissionInput({
+    title: values.title ?? "",
+    abstract: values.abstract ?? "",
+    keywords: splitKeywords(values.keywordsInput),
+    authors: (values.authors ?? []).map((a) => ({
+      name: a.name ?? "",
+      email: a.email ?? "",
+      affiliation: a.affiliation || undefined,
+      isCorresponding: !!a.isCorresponding,
+    })),
+    correspondingEmail: values.correspondingEmail ?? "",
+    correspondingPhone: values.correspondingPhone ?? "",
+  }) as SubmissionFormInput;
+}
+
+/** Writes a nested error like "authors.0.email" into a react-hook-form errors object. */
+function setNestedError(errors: Record<string, unknown>, path: (string | number)[], message: string) {
+  let node: Record<string | number, unknown> = errors;
+  for (let i = 0; i < path.length - 1; i++) {
+    const key = path[i];
+    const nextIsIndex = typeof path[i + 1] === "number";
+    if (node[key] == null) node[key] = nextIsIndex ? [] : {};
+    node = node[key] as Record<string | number, unknown>;
+  }
+  const last = path[path.length - 1];
+  if (node[last] == null) node[last] = { type: "validate", message };
+}
+
+/** Runs the shared zod schema (the same one the server uses) over the whole form. */
+const formResolver: Resolver<FormValues> = async (values) => {
+  const errors: Record<string, unknown> = {};
+  const parsed = submissionFormSchema.safeParse(toPayload(values));
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      const [head, ...rest] = issue.path;
+      if (head === "keywords") {
+        const message =
+          rest.length > 0 ? "Each keyword must be at least 2 characters" : issue.message;
+        setNestedError(errors, ["keywordsInput"], message);
+      } else if (head === "authors" && rest.length >= 2) {
+        setNestedError(errors, ["authors", rest[0], rest[1]], issue.message);
+      } else if (head === "authors") {
+        setNestedError(errors, ["authors", 0, "name"], issue.message);
+      } else if (typeof head === "string") {
+        setNestedError(errors, [head], issue.message);
+      }
+    }
+  }
+  if (!values.consent) {
+    setNestedError(errors, ["consent"], "Please confirm the declaration to continue");
+  }
+  if (Object.keys(errors).length > 0) {
+    return { values: {}, errors: errors as FieldErrors<FormValues> };
+  }
+  return { values, errors: {} };
+};
+
+/** DOM order of fields, used to scroll/focus the first invalid one. */
+function orderedErrorNames(errors: FieldErrors<FormValues>, authorCount: number): { name: string; message: string }[] {
+  const out: { name: string; message: string }[] = [];
+  const push = (name: string, message?: string) => message && out.push({ name, message });
+  push("title", errors.title?.message);
+  push("abstract", errors.abstract?.message);
+  push("keywordsInput", errors.keywordsInput?.message);
+  for (let i = 0; i < authorCount; i++) {
+    push(`authors.${i}.name`, errors.authors?.[i]?.name?.message);
+    push(`authors.${i}.email`, errors.authors?.[i]?.email?.message);
+  }
+  push("correspondingEmail", errors.correspondingEmail?.message);
+  push("correspondingPhone", errors.correspondingPhone?.message);
+  return out;
+}
+
+function focusField(name: string) {
+  if (typeof document === "undefined") return;
+  const el =
+    name === "file"
+      ? document.getElementById(FILE_SECTION_ID)
+      : document.querySelector<HTMLElement>(`[name="${name}"]`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  const focusTarget =
+    name === "file" ? el.querySelector<HTMLElement>("label, button, input") ?? el : el;
+  window.setTimeout(() => focusTarget.focus({ preventScroll: true }), 250);
+}
+
 export default function SubmissionForm() {
+  const { enqueueSnackbar } = useSnackbar();
   const [file, setFile] = React.useState<File | null>(null);
   const [fileError, setFileError] = React.useState<string | null>(null);
+  const [checkingFile, setCheckingFile] = React.useState(false);
   const [status, setStatus] = React.useState<"idle" | "submitting" | "success" | "error">(
     "idle"
   );
@@ -60,6 +177,12 @@ export default function SubmissionForm() {
   const [quoteInfo, setQuoteInfo] = React.useState<QuoteInfo | null>(null);
   const [couponError, setCouponError] = React.useState<string | null>(null);
   const [applying, setApplying] = React.useState(false);
+  /**
+   * A verified payment whose submission upload failed. The order is not yet
+   * attached to a submission, so the server accepts it again - the author can
+   * fix the problem and resubmit without paying twice.
+   */
+  const pendingPaymentRef = React.useRef<RazorpayResponse | null>(null);
 
   React.useEffect(() => {
     fetch("/api/payment/quote")
@@ -75,14 +198,29 @@ export default function SubmissionForm() {
     reset,
     getValues,
     setValue,
-    formState: { errors },
+    watch,
+    formState: { errors, isSubmitted },
   } = useForm<FormValues>({
+    resolver: formResolver,
+    mode: "onSubmit",
+    reValidateMode: "onChange",
+    shouldFocusError: false,
     defaultValues: {
+      title: "",
+      abstract: "",
+      keywordsInput: "",
+      correspondingEmail: "",
+      correspondingPhone: "",
+      couponCode: "",
+      consent: false,
       authors: [{ name: "", email: "", affiliation: "", isCorresponding: true }],
     },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "authors" });
+
+  const abstractLength = (watch("abstract") ?? "").trim().length;
+  const keywordCount = splitKeywords(watch("keywordsInput")).length;
 
   const applyCoupon = async () => {
     const code = getValues("couponCode")?.trim();
@@ -94,13 +232,21 @@ export default function SubmissionForm() {
     setApplying(true);
     try {
       const res = await fetch(`/api/payment/quote?coupon=${encodeURIComponent(code)}`);
-      const body = await res.json();
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setQuoteInfo(null);
         setCouponError(body?.error ?? "Invalid coupon code");
         return;
       }
       setQuoteInfo(body);
+      enqueueSnackbar(
+        body.finalAmountPaise === 0
+          ? "Coupon applied - no payment needed"
+          : `Coupon applied - ${body.discountPercent}% off`,
+        { variant: "success" }
+      );
+    } catch {
+      setCouponError("Could not check the coupon, please try again");
     } finally {
       setApplying(false);
     }
@@ -114,63 +260,85 @@ export default function SubmissionForm() {
 
   const payable = quoteInfo?.finalAmountPaise ?? baseFee;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    if (!f) {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const f = input.files?.[0] ?? null;
+    // allow re-selecting the same file after fixing it
+    input.value = "";
+    if (!f) return;
+
+    const metaError = checkManuscriptMeta(f);
+    if (metaError) {
+      setFileError(metaError);
       setFile(null);
       return;
     }
-    if (!ACCEPTED_MANUSCRIPT_MIME_TYPES.includes(f.type)) {
-      setFileError("Only PDF, DOC, or DOCX files are supported.");
+    setCheckingFile(true);
+    try {
+      const head = new Uint8Array(await f.slice(0, 1024).arrayBuffer());
+      const bytesError = checkManuscriptBytes(f.name, head);
+      if (bytesError) {
+        setFileError(bytesError);
+        setFile(null);
+        return;
+      }
+      setFileError(null);
+      setFile(f);
+    } catch {
+      setFileError("Could not read the selected file. Please choose it again.");
       setFile(null);
-      return;
+    } finally {
+      setCheckingFile(false);
     }
-    if (f.size > MAX_MANUSCRIPT_SIZE_BYTES) {
-      setFileError("File must be smaller than 20 MB.");
-      setFile(null);
-      return;
-    }
-    setFileError(null);
-    setFile(f);
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const currentFileError = (): string | null => {
+    if (!file) return fileError ?? "Please attach your manuscript file.";
+    return checkManuscriptMeta(file);
+  };
+
+  const reportInvalid = (formErrors: FieldErrors<FormValues>) => {
+    const list = orderedErrorNames(formErrors, fields.length);
+    const fErr = currentFileError();
+    if (fErr) {
+      setFileError(fErr);
+      list.push({ name: "file", message: fErr });
+    }
+    if (formErrors.consent?.message) list.push({ name: "consent", message: formErrors.consent.message });
+    if (list.length === 0) return;
+    focusField(list[0].name);
+    enqueueSnackbar(
+      list.length === 1
+        ? list[0].message
+        : `Please fix ${list.length} fields before continuing. ${list[0].message}`,
+      { variant: "error" }
+    );
+  };
+
+  const onValid = async (values: FormValues) => {
     setServerError(null);
-    if (!file) {
-      setFileError("Please attach your manuscript file.");
+
+    // The manuscript lives outside react-hook-form, so check it here too.
+    const fErr = currentFileError();
+    if (fErr || !file) {
+      reportInvalid({});
       return;
     }
 
-    const keywords = values.keywordsInput
-      .split(",")
-      .map((k) => k.trim())
-      .filter(Boolean);
-
-    const payload = {
-      title: values.title,
-      abstract: values.abstract,
-      keywords,
-      authors: values.authors.map((a) => ({
-        name: a.name,
-        email: a.email,
-        affiliation: a.affiliation || undefined,
-        isCorresponding: a.isCorresponding,
-      })),
-      correspondingEmail: values.correspondingEmail,
-      correspondingPhone: values.correspondingPhone || undefined,
-    };
-
+    const payload = toPayload(values);
     const parsed = submissionFormSchema.safeParse(payload);
     if (!parsed.success) {
-      setServerError(parsed.error.issues[0]?.message ?? "Please check the form for errors.");
+      // Should not happen (the resolver ran the same schema), but never proceed to checkout.
+      enqueueSnackbar(parsed.error.issues[0]?.message ?? "Please check the form for errors.", {
+        variant: "error",
+      });
       return;
     }
 
     setStatus("submitting");
-
     const couponCode = values.couponCode?.trim() || undefined;
 
-    const submit = async (extra: { payment?: unknown; couponCode?: string }) => {
+    const submit = async (extra: { payment?: RazorpayResponse; couponCode?: string }) => {
       const formData = new FormData();
       formData.append("payload", JSON.stringify(parsed.data));
       if (extra.payment) formData.append("payment", JSON.stringify(extra.payment));
@@ -184,26 +352,51 @@ export default function SubmissionForm() {
       }
     };
 
+    const finish = () => {
+      pendingPaymentRef.current = null;
+      setStatus("success");
+      reset();
+      setFile(null);
+      setQuoteInfo(null);
+      enqueueSnackbar("Manuscript submitted successfully", { variant: "success" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     try {
+      // Already paid in an earlier attempt whose upload failed: reuse that payment.
+      if (pendingPaymentRef.current) {
+        await submit({ payment: pendingPaymentRef.current });
+        finish();
+        return;
+      }
+
+      // Server-side pre-validation of all metadata happens inside create-order,
+      // so no order is ever created for an incomplete submission.
       const orderRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ couponCode }),
+        body: JSON.stringify({
+          couponCode,
+          consent: true,
+          submission: parsed.data,
+          file: { name: file.name, size: file.size, type: file.type },
+        }),
       });
       if (!orderRes.ok) {
         const body = await orderRes.json().catch(() => ({}));
-        throw new Error(body?.error ?? "Could not start checkout");
+        throw new Error(typeof body?.error === "string" ? body.error : "Could not start checkout");
       }
       const order = await orderRes.json();
 
       // 100% coupon: nothing to charge, so skip Razorpay entirely.
       if (order.free) {
         await submit({ couponCode });
-        setStatus("success");
-        reset();
-        setFile(null);
-        setQuoteInfo(null);
+        finish();
         return;
+      }
+
+      if (typeof window.Razorpay !== "function") {
+        throw new Error("The payment gateway is still loading. Please try again in a moment.");
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -217,15 +410,12 @@ export default function SubmissionForm() {
             ? `Manuscript submission fee (${order.discountPercent}% off)`
             : "Manuscript submission fee",
           prefill: {
-            email: values.correspondingEmail,
-            contact: values.correspondingPhone || undefined,
+            email: parsed.data.correspondingEmail,
+            contact: parsed.data.correspondingPhone,
           },
           theme: { color: "#7a1f2b" },
-          handler: async (response: {
-            razorpay_order_id: string;
-            razorpay_payment_id: string;
-            razorpay_signature: string;
-          }) => {
+          handler: async (response: RazorpayResponse) => {
+            pendingPaymentRef.current = response;
             try {
               await submit({ payment: response });
               resolve();
@@ -234,19 +424,26 @@ export default function SubmissionForm() {
             }
           },
           modal: {
-            ondismiss: () => reject(new Error("Payment was cancelled")),
+            ondismiss: () => reject(new CancelledError("Payment was cancelled")),
           },
         });
         checkout.open();
       });
 
-      setStatus("success");
-      reset();
-      setFile(null);
-      setQuoteInfo(null);
+      finish();
     } catch (err) {
       setStatus("error");
-      setServerError(err instanceof Error ? err.message : "Submission failed");
+      if (err instanceof CancelledError) {
+        setServerError(null);
+        enqueueSnackbar("Payment was cancelled. Your details are still here.", { variant: "warning" });
+        return;
+      }
+      const message = err instanceof Error ? err.message : "Submission failed";
+      const paidNote = pendingPaymentRef.current
+        ? " Your payment was received - fix the issue and submit again; you will not be charged twice."
+        : "";
+      setServerError(message + paidNote);
+      enqueueSnackbar(message, { variant: "error" });
     }
   };
 
@@ -259,15 +456,24 @@ export default function SubmissionForm() {
     );
   }
 
+  const submitting = status === "submitting";
+  const showFileError = fileError ?? (isSubmitted && !file ? "Please attach your manuscript file." : null);
+
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 820 }}>
+    <Box
+      component="form"
+      noValidate
+      onSubmit={handleSubmit(onValid, reportInvalid)}
+      sx={{ maxWidth: 820 }}
+    >
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <Stack spacing={3}>
         {serverError && <Alert severity="error">{serverError}</Alert>}
 
         <TextField
           label="Manuscript Title"
-          {...register("title", { required: "Title is required", minLength: 10 })}
+          required
+          {...register("title")}
           error={!!errors.title}
           helperText={errors.title?.message ?? "Minimum 10 characters"}
           fullWidth
@@ -275,19 +481,62 @@ export default function SubmissionForm() {
 
         <TextField
           label="Abstract"
-          {...register("abstract", { required: "Abstract is required" })}
+          required
+          {...register("abstract")}
           error={!!errors.abstract}
-          helperText={errors.abstract?.message ?? "100-5000 characters"}
+          helperText={
+            <Box component="span" sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+              <span>{errors.abstract?.message ?? `${ABSTRACT_MIN}-${ABSTRACT_MAX} characters`}</span>
+              <Box
+                component="span"
+                sx={{
+                  flexShrink: 0,
+                  fontVariantNumeric: "tabular-nums",
+                  color:
+                    abstractLength > ABSTRACT_MAX
+                      ? "error.main"
+                      : abstractLength >= ABSTRACT_MIN
+                        ? "success.main"
+                        : "text.secondary",
+                }}
+              >
+                {abstractLength} / {ABSTRACT_MAX}
+                {abstractLength < ABSTRACT_MIN ? ` (${ABSTRACT_MIN - abstractLength} more needed)` : ""}
+              </Box>
+            </Box>
+          }
           multiline
-          rows={6}
+          minRows={6}
           fullWidth
         />
 
         <TextField
           label="Keywords"
-          {...register("keywordsInput", { required: "Please add at least 3 keywords" })}
+          required
+          {...register("keywordsInput")}
           error={!!errors.keywordsInput}
-          helperText={errors.keywordsInput?.message ?? "Comma-separated, e.g. machine learning, nlp, ethics"}
+          helperText={
+            <Box component="span" sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+              <span>
+                {errors.keywordsInput?.message ??
+                  "Comma-separated, e.g. machine learning, nlp, ethics"}
+              </span>
+              <Box
+                component="span"
+                sx={{
+                  flexShrink: 0,
+                  color:
+                    keywordCount > KEYWORDS_MAX
+                      ? "error.main"
+                      : keywordCount >= KEYWORDS_MIN
+                        ? "success.main"
+                        : "text.secondary",
+                }}
+              >
+                {keywordCount} / {KEYWORDS_MIN}-{KEYWORDS_MAX}
+              </Box>
+            </Box>
+          }
           fullWidth
         />
 
@@ -301,18 +550,25 @@ export default function SubmissionForm() {
                 key={field.id}
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1.5}
-                alignItems={{ sm: "center" }}
+                alignItems={{ sm: "flex-start" }}
               >
                 <TextField
                   label="Name"
                   size="small"
-                  {...register(`authors.${index}.name`, { required: true })}
+                  required
+                  {...register(`authors.${index}.name`)}
+                  error={!!errors.authors?.[index]?.name}
+                  helperText={errors.authors?.[index]?.name?.message}
                   sx={{ flex: 1 }}
                 />
                 <TextField
                   label="Email"
                   size="small"
-                  {...register(`authors.${index}.email`, { required: true })}
+                  type="email"
+                  required
+                  {...register(`authors.${index}.email`)}
+                  error={!!errors.authors?.[index]?.email}
+                  helperText={errors.authors?.[index]?.email?.message}
                   sx={{ flex: 1 }}
                 />
                 <TextField
@@ -323,15 +579,20 @@ export default function SubmissionForm() {
                 />
                 <FormControlLabel
                   control={
-                    <Checkbox size="small" {...register(`authors.${index}.isCorresponding`)} />
+                    <Checkbox
+                      size="small"
+                      defaultChecked={!!field.isCorresponding}
+                      {...register(`authors.${index}.isCorresponding`)}
+                    />
                   }
                   label="Corresponding"
-                  sx={{ whiteSpace: "nowrap" }}
+                  sx={{ whiteSpace: "nowrap", mt: { sm: 0.25 } }}
                 />
                 <IconButton
                   aria-label="Remove author"
                   onClick={() => remove(index)}
                   disabled={fields.length === 1}
+                  sx={{ alignSelf: { xs: "flex-end", sm: "flex-start" } }}
                 >
                   <DeleteOutlineIcon fontSize="small" />
                 </IconButton>
@@ -347,36 +608,77 @@ export default function SubmissionForm() {
           </Button>
         </Paper>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
           <TextField
             label="Corresponding Author Email"
-            {...register("correspondingEmail", { required: true })}
+            type="email"
+            required
+            autoComplete="email"
+            {...register("correspondingEmail")}
             error={!!errors.correspondingEmail}
-            helperText={errors.correspondingEmail?.message}
+            helperText={errors.correspondingEmail?.message ?? "Decision and receipt emails go here"}
             fullWidth
           />
           <TextField
-            label="Corresponding Author Phone (optional)"
+            label="Corresponding Author Mobile"
+            type="tel"
+            required
+            autoComplete="tel"
+            inputProps={{ inputMode: "tel" }}
             {...register("correspondingPhone")}
+            error={!!errors.correspondingPhone}
+            helperText={
+              errors.correspondingPhone?.message ??
+              "Required. 10-15 digits with country code, e.g. +91 98765 43210"
+            }
             fullWidth
           />
         </Stack>
 
-        <Paper variant="outlined" sx={{ p: 2.5 }}>
+        <Paper
+          id={FILE_SECTION_ID}
+          variant="outlined"
+          sx={{ p: 2.5, borderColor: showFileError ? "error.main" : undefined }}
+        >
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-            Manuscript File
+            Manuscript File *
           </Typography>
-          <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>
-            {file ? file.name : "Choose PDF or Word file"}
+          <Button
+            component="label"
+            variant="outlined"
+            color={showFileError ? "error" : "primary"}
+            startIcon={
+              checkingFile ? (
+                <CircularProgress size={16} />
+              ) : file ? (
+                <InsertDriveFileOutlinedIcon />
+              ) : (
+                <UploadFileIcon />
+              )
+            }
+            disabled={checkingFile}
+            sx={{ maxWidth: "100%", "& .MuiButton-startIcon": { flexShrink: 0 } }}
+          >
+            <Box
+              component="span"
+              sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
+              {file ? file.name : "Choose PDF or Word file"}
+            </Box>
             <input type="file" hidden accept={ACCEPT_ATTR} onChange={handleFileChange} />
           </Button>
-          {fileError && (
-            <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-              {fileError}
+          {file && !showFileError && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {(file.size / (1024 * 1024)).toFixed(2)} MB - looks good
+            </Typography>
+          )}
+          {showFileError && (
+            <Typography variant="body2" color="error" sx={{ mt: 1 }} role="alert">
+              {showFileError}
             </Typography>
           )}
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-            Accepted formats: PDF, DOC, DOCX. Maximum size: 20 MB.
+            Accepted formats: PDF, DOC, DOCX. Maximum size: {MAX_MANUSCRIPT_MB} MB.
           </Typography>
         </Paper>
 
@@ -454,19 +756,52 @@ export default function SubmissionForm() {
           </Typography>
         </Paper>
 
+        <Box>
+          <FormControlLabel
+            control={<Checkbox {...register("consent")} />}
+            label={
+              <Typography variant="body2">
+                I confirm this manuscript is original, is not under review elsewhere, and all
+                co-authors approve this submission. I agree to the{" "}
+                <MuiLink component={NextLink} href="/terms-and-conditions" target="_blank">
+                  Terms and Conditions
+                </MuiLink>{" "}
+                and understand the submission fee is{" "}
+                <MuiLink component={NextLink} href="/refund-policy" target="_blank">
+                  non-refundable
+                </MuiLink>
+                .
+              </Typography>
+            }
+            sx={{ alignItems: "flex-start", "& .MuiCheckbox-root": { pt: 0.25 } }}
+          />
+          {errors.consent?.message && (
+            <FormHelperText error sx={{ ml: 4 }}>
+              {errors.consent.message}
+            </FormHelperText>
+          )}
+        </Box>
+
         <Button
           type="submit"
           variant="contained"
           size="large"
-          disabled={status === "submitting"}
-          startIcon={status === "submitting" ? <CircularProgress size={18} color="inherit" /> : undefined}
+          disabled={submitting || checkingFile}
+          startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : undefined}
         >
-          {status === "submitting"
+          {submitting
             ? "Processing..."
-            : payable === 0
-              ? "Submit Manuscript"
-              : `Proceed to Pay${payable != null ? ` ${formatInr(payable)}` : ""}`}
+            : pendingPaymentRef.current
+              ? "Retry Submission (already paid)"
+              : payable === 0
+                ? "Submit Manuscript"
+                : `Proceed to Pay${payable != null ? ` ${formatInr(payable)}` : ""}`}
         </Button>
+        {payable !== 0 && (
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <SecurePaymentBadge />
+          </Box>
+        )}
       </Stack>
     </Box>
   );

@@ -31,12 +31,36 @@ import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, type SxProps, type Theme } from "@mui/material/styles";
 
 type NavLink = { label: string; href: string };
 type NavEntry = (NavLink | { label: string; children: NavLink[] }) & {
   icon?: React.ReactNode;
 };
+
+/** Desktop nav item: gold bar grows from the centre on hover / keyboard focus / active route. */
+const navItemSx = (active: boolean): SxProps<Theme> => ({
+  position: "relative",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 4,
+    height: "2px",
+    bgcolor: "secondary.main",
+    transform: active ? "scaleX(1)" : "scaleX(0)",
+    transformOrigin: "center",
+    transition: "transform 0.2s ease",
+  },
+  "@media (hover: hover)": {
+    "&:hover": { transform: "none", boxShadow: "none", bgcolor: "transparent", color: "primary.main" },
+    "&:hover::after": { transform: "scaleX(1)" },
+  },
+  "&:focus-visible::after": { transform: "scaleX(1)" },
+  "&:focus-visible": { outline: "2px solid", outlineColor: "secondary.main", outlineOffset: 2 },
+  ...(active && { color: "primary.main" }),
+});
 
 const NAV_ENTRIES: NavEntry[] = [
   { label: "Home", href: "/", icon: <HomeOutlinedIcon fontSize="small" /> },
@@ -47,7 +71,9 @@ const NAV_ENTRIES: NavEntry[] = [
       { label: "About the Journal", href: "/about" },
       { label: "Editorial Board", href: "/editorial-board" },
       { label: "Reviewers", href: "/reviewers" },
+      { label: "Become a Reviewer", href: "/become-a-reviewer" },
       { label: "Author Guidelines", href: "/author-guidelines" },
+      { label: "FAQ", href: "/faq" },
     ],
   },
   {
@@ -73,10 +99,24 @@ const NAV_ENTRIES: NavEntry[] = [
   { label: "Contact", href: "/contact", icon: <MailOutlineIcon fontSize="small" /> },
 ];
 
-function HoverDropdown({ label, children }: { label: string; children: NavLink[] }) {
+function HoverDropdown({ label, children, active }: { label: string; children: NavLink[]; active: boolean }) {
+  const pathname = usePathname();
   return (
-    <Box sx={{ position: "relative", "&:hover .nav-dropdown-panel": { display: "block" } }}>
-      <Button color="inherit" endIcon={<KeyboardArrowDownIcon fontSize="small" />}>
+    <Box
+      sx={{
+        position: "relative",
+        // focus-within keeps the panel reachable by keyboard (Tab into it)
+        "&:hover .nav-dropdown-panel, &:focus-within .nav-dropdown-panel": { display: "block" },
+        "&:hover > .nav-trigger::after, &:focus-within > .nav-trigger::after": { transform: "scaleX(1)" },
+      }}
+    >
+      <Button
+        className="nav-trigger"
+        color="inherit"
+        aria-haspopup="true"
+        endIcon={<KeyboardArrowDownIcon fontSize="small" />}
+        sx={navItemSx(active)}
+      >
         {label}
       </Button>
       <Paper
@@ -90,26 +130,42 @@ function HoverDropdown({ label, children }: { label: string; children: NavLink[]
           minWidth: 230,
           zIndex: 20,
           py: 1,
+          borderTop: "2px solid",
+          borderTopColor: "secondary.main",
         }}
       >
-        {children.map((link) => (
-          <Box
-            key={link.href}
-            component={Link}
-            href={link.href}
-            sx={{
-              display: "block",
-              px: 2,
-              py: 1,
-              color: "text.primary",
-              textDecoration: "none",
-              fontSize: 14,
-              "&:hover": { bgcolor: "action.hover" },
-            }}
-          >
-            {link.label}
-          </Box>
-        ))}
+        {children.map((link) => {
+          const current = pathname === link.href;
+          return (
+            <Box
+              key={link.href}
+              component={Link}
+              href={link.href}
+              aria-current={current ? "page" : undefined}
+              sx={{
+                display: "block",
+                px: 2,
+                py: 1,
+                color: current ? "primary.main" : "text.primary",
+                fontWeight: current ? 600 : 400,
+                textDecoration: "none",
+                fontSize: 14,
+                borderLeft: "3px solid",
+                borderLeftColor: current ? "secondary.main" : "transparent",
+                transition: "color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, padding-left 0.15s ease",
+                "&:hover, &:focus-visible": {
+                  bgcolor: "action.hover",
+                  color: "primary.main",
+                  borderLeftColor: "secondary.main",
+                  pl: 2.5,
+                },
+                "&:focus-visible": { outline: "none" },
+              }}
+            >
+              {link.label}
+            </Box>
+          );
+        })}
       </Paper>
     </Box>
   );
@@ -188,9 +244,21 @@ export default function Navbar() {
               <Box sx={{ display: "flex", gap: 0.5 }}>
                 {NAV_ENTRIES.map((entry) =>
                   "children" in entry ? (
-                    <HoverDropdown key={entry.label} label={entry.label} children={entry.children} />
+                    <HoverDropdown
+                      key={entry.label}
+                      label={entry.label}
+                      children={entry.children}
+                      active={isChildActive(entry.children)}
+                    />
                   ) : (
-                    <Button key={entry.href} component={Link} href={entry.href} color="inherit">
+                    <Button
+                      key={entry.href}
+                      component={Link}
+                      href={entry.href}
+                      color="inherit"
+                      aria-current={pathname === entry.href ? "page" : undefined}
+                      sx={navItemSx(pathname === entry.href)}
+                    >
                       {entry.label}
                     </Button>
                   )

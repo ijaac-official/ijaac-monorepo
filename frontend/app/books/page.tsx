@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
@@ -9,16 +11,11 @@ import MotionCard from "@/components/MotionCard";
 export const metadata = { title: "Books - IJAAC Journal" };
 export const revalidate = 0;
 
-export default async function BooksPage() {
+async function BooksContent() {
   const books = await listBooks().catch(() => []);
 
   return (
     <>
-      <PageHero
-        title="Published Books"
-        subtitle="Books authored or edited by our editorial and reviewer community."
-        image="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1920&q=80"
-      />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Grid container spacing={3}>
           {books.map((book, i) => (
@@ -33,6 +30,22 @@ export default async function BooksPage() {
           <Typography color="text.secondary">No books published yet.</Typography>
         )}
       </Container>
+    </>
+  );
+}
+
+/** Banner renders immediately; only the S3-backed content waits behind a skeleton. */
+export default function BooksPage() {
+  return (
+    <>
+      <PageHero
+        title="Published Books"
+        subtitle="Books authored or edited by our editorial and reviewer community."
+        icon="books"
+      />
+      <Suspense fallback={<CardGridSkeleton bare count={6} />}>
+        <BooksContent />
+      </Suspense>
     </>
   );
 }

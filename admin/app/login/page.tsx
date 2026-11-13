@@ -4,6 +4,7 @@ import * as React from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Box from "@mui/material/Box";
+import Image from "next/image";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -80,7 +81,10 @@ function LoginForm() {
       }}
     >
       <Paper elevation={2} sx={{ p: 4, width: "100%", maxWidth: 420 }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom color="primary.main">
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+          <Image src="/logo.png" alt="IJAAC" width={120} height={81} style={{ height: 72, width: "auto" }} priority />
+        </Box>
+        <Typography variant="h5" fontWeight={700} gutterBottom color="primary.main" textAlign="center">
           IJAAC Admin
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>

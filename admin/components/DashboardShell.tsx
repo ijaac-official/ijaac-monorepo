@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import Box from "@mui/material/Box";
@@ -25,19 +26,25 @@ import Groups2Icon from "@mui/icons-material/Groups2";
 import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
 import LogoutIcon from "@mui/icons-material/Logout";
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
 
 const DRAWER_WIDTH = 240;
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: <DashboardIcon /> },
   { label: "Submissions", href: "/submissions", icon: <DescriptionIcon /> },
+  { label: "Add Paper", href: "/submissions/new", icon: <NoteAddIcon /> },
   { label: "Issues", href: "/issues", icon: <CollectionsBookmarkIcon /> },
   { label: "Books", href: "/books", icon: <MenuBookIcon /> },
   { label: "Reviewers", href: "/reviewers", icon: <PeopleIcon /> },
+  { label: "Reviewer Applications", href: "/reviewers/applications", icon: <HowToRegIcon /> },
   { label: "Editorial Board", href: "/editorial-board", icon: <Groups2Icon /> },
   { label: "Certificates", href: "/certificates", icon: <WorkspacePremiumIcon /> },
   { label: "Promotions", href: "/promotions", icon: <LocalOfferIcon /> },
+  { label: "Payments", href: "/payments", icon: <QrCode2Icon /> },
 ];
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -46,7 +53,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex", width: "100%" }}>
       <AppBar
         position="fixed"
         sx={{ width: `calc(100% - ${DRAWER_WIDTH}px)`, ml: `${DRAWER_WIDTH}px`, bgcolor: "background.paper", color: "text.primary" }}
@@ -78,10 +85,23 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           [`& .MuiDrawer-paper`]: { width: DRAWER_WIDTH, boxSizing: "border-box", bgcolor: "primary.main", color: "white" },
         }}
       >
-        <Toolbar>
-          <Typography variant="h6" fontWeight={700}>
-            IJAAC Admin
-          </Typography>
+        <Toolbar sx={{ gap: 1.5 }}>
+          <Box
+            component={Link}
+            href="/"
+            sx={{ display: "inline-flex", bgcolor: "white", px: 1, py: 0.5, lineHeight: 0 }}
+            aria-label="IJAAC Admin home"
+          >
+            <Image src="/logo.png" alt="IJAAC" width={60} height={40} style={{ height: 36, width: "auto" }} priority />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={700} lineHeight={1.1}>
+              IJAAC
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.75 }}>
+              Admin Console
+            </Typography>
+          </Box>
         </Toolbar>
         <List>
           {NAV_ITEMS.map((item) => {
@@ -111,9 +131,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", minHeight: "100vh" }}>
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, width: { md: `calc(100% - ${DRAWER_WIDTH}px)` }, bgcolor: "background.default", minHeight: "100vh", overflowX: "clip" }}>
         <Toolbar />
-        <Box sx={{ p: 3 }}>{children}</Box>
+        <Box sx={{ p: 3, maxWidth: "100%" }}>{children}</Box>
       </Box>
     </Box>
   );

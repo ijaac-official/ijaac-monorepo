@@ -1,47 +1,42 @@
 import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
-import { getIssue, listSubmissions } from "@ijaac/data-store";
-import PageHero from "@/components/PageHero";
+import Button from "@mui/material/Button";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { getIssue, listPublicPapers } from "@ijaac/data-store";
+import PageHero from "@/components/PageHero";
+import IssueDetailView from "../_components/IssueDetailView";
 
 export const revalidate = 0;
+
+function issueTitle(issue: { title?: string; volume: string; number: string }) {
+  return issue.title ?? `Volume ${issue.volume}, Issue ${issue.number}`;
+}
+
+export async function generateMetadata({ params }: { params: { issueId: string } }): Promise<Metadata> {
+  const issue = await getIssue(params.issueId).catch(() => null);
+  return { title: issue ? `${issueTitle(issue)} - IJAAC Journal` : "Issue - IJAAC Journal" };
+}
 
 export default async function ArchiveIssuePage({ params }: { params: { issueId: string } }) {
   const issue = await getIssue(params.issueId).catch(() => null);
   if (!issue) notFound();
 
-  const papers = (await listSubmissions({ status: "PUBLISHED" }).catch(() => [])).filter(
-    (s) => s.issueId === issue.id
-  );
+  const papers = await listPublicPapers({ issueId: issue.id }).catch(() => []);
 
   return (
     <>
       <PageHero
-        title={issue.title ?? `Volume ${issue.volume}, Issue ${issue.number}`}
-        image="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1920&q=80"
+        title={issueTitle(issue)}
+        subtitle={`Volume ${issue.volume}, Issue ${issue.number}`}
+        icon="issue"
       />
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <List>
-          {papers.map((paper) => (
-            <ListItem key={paper.id} sx={{ py: 2 }}>
-              <ListItemText
-                primary={
-                  <Link href={`/publications/${paper.id}`} style={{ color: "inherit" }}>
-                    {paper.title}
-                  </Link>
-                }
-                secondary={paper.authors.map((a) => a.name).join(", ")}
-              />
-            </ListItem>
-          ))}
-          {papers.length === 0 && (
-            <Typography color="text.secondary">No articles in this issue.</Typography>
-          )}
-        </List>
+        <Button component={Link} href="/archives" startIcon={<ArrowBackIcon />} sx={{ mb: 3, px: 1 }}>
+          All issues
+        </Button>
+        <IssueDetailView issue={issue} papers={papers} />
       </Container>
     </>
   );

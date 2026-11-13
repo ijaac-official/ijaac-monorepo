@@ -3,10 +3,17 @@ import { reviewerInputSchema } from "@ijaac/shared";
 import { createReviewer, listReviewers } from "@ijaac/data-store";
 import { requireSession } from "@/lib/requireSession";
 
-export async function GET() {
+const STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
+
+/** GET /api/reviewers?status=APPROVED&activeOnly=1 */
+export async function GET(req: NextRequest) {
   const session = await requireSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  return NextResponse.json(await listReviewers());
+  const statusParam = req.nextUrl.searchParams.get("status")?.toUpperCase();
+  const status = STATUSES.find((s) => s === statusParam);
+  const activeParam = req.nextUrl.searchParams.get("activeOnly");
+  const activeOnly = activeParam === "1" || activeParam === "true";
+  return NextResponse.json(await listReviewers({ status, activeOnly }));
 }
 
 export async function POST(req: NextRequest) {

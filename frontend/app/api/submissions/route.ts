@@ -1,8 +1,6 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
-  ACCEPTED_MANUSCRIPT_MIME_TYPES,
-  MAX_MANUSCRIPT_SIZE_BYTES,
   formatInr,
   paymentVerificationSchema,
   submissionFormSchema,
@@ -22,6 +20,14 @@ import {
 } from "@ijaac/email";
 import { generateReceiptPdf } from "@ijaac/certificate";
 import { baseFeePaise, getRazorpay, quote } from "@/lib/pricing";
+import {
+  MANUSCRIPT_MIME,
+  checkManuscriptBytes,
+  checkManuscriptMeta,
+  firstIssueMessage,
+  kindFromName,
+  normalizeSubmissionInput,
+} from "@/app/submit-paper/manuscript-checks";
 
 export const runtime = "nodejs";
 
@@ -51,15 +57,25 @@ export async function POST(req: NextRequest) {
     return fail("Malformed payload");
   }
 
-  const parsed = submissionFormSchema.safeParse(payloadJson);
+  const parsed = submissionFormSchema.safeParse(normalizeSubmissionInput(payloadJson));
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: firstIssueMessage(parsed.error), issues: parsed.error.issues },
+      { status: 400 }
+    );
   }
 
-  if (!ACCEPTED_MANUSCRIPT_MIME_TYPES.includes(file.type)) {
-    return fail("Only PDF, DOC, or DOCX files are supported");
-  }
-  if (file.size > MAX_MANUSCRIPT_SIZE_BYTES) return fail("File exceeds the 20 MB limit");
+  // File checks happen BEFORE any coupon is redeemed or payment is consumed:
+  // non-empty, allowed extension/MIME, size limit, and magic bytes that match
+  // the extension (%PDF, D0 CF 11 E0 for .doc, PK zip for .docx).
+  const metaError = checkManuscriptMeta(file);
+  if (metaError) return fail(metaError);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  if (buffer.length === 0) return fail("The selected file is empty.");
+  const bytesError = checkManuscriptBytes(file.name, new Uint8Array(buffer.subarray(0, 1024)));
+  if (bytesError) return fail(bytesError);
+  const fileKind = kindFromName(file.name)!;
+  const fileType = MANUSCRIPT_MIME[fileKind];
 
   let paymentRecord: PaymentRecord | undefined;
   let couponCode: string | undefined;
@@ -130,11 +146,10 @@ export async function POST(req: NextRequest) {
     return fail("Missing payment details");
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   const fileKey = `${S3_PREFIXES.manuscripts}${randomUUID()}/${sanitizeFileName(file.name)}`;
 
   try {
-    await putObjectBuffer(fileKey, buffer, file.type);
+    await putObjectBuffer(fileKey, buffer, fileType);
   } catch (err) {
     console.error("S3 upload failed", err);
     return fail("File upload failed, please try again", 502);
@@ -151,8 +166,8 @@ export async function POST(req: NextRequest) {
     id: submissionId,
     fileKey,
     fileName: file.name,
-    fileType: file.type,
-    fileSize: file.size,
+    fileType,
+    fileSize: buffer.length,
     payment: paymentRecord,
     couponCode,
     discountPercent,

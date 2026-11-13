@@ -21,6 +21,13 @@ const theme = createTheme({
   },
   shape: { borderRadius: 0 },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        // Never allow a sideways page scroll; wide content scrolls inside its own container.
+        "html, body": { maxWidth: "100%", overflowX: "hidden" },
+        "@supports (overflow-x: clip)": { "html, body": { overflowX: "clip" } },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
@@ -78,7 +85,7 @@ const theme = createTheme({
     },
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 600, borderRadius: 0 },
+        root: { fontWeight: 600, borderRadius: 999 },
       },
     },
     MuiDialog: {

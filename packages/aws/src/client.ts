@@ -66,4 +66,10 @@ export const S3_PREFIXES = {
   publicAssets: "public/",
   /** Public copies of published papers, for Google Scholar / public indexing */
   publicPapers: "public/papers/",
+  /** Browser direct-to-S3 uploads land here first; the submit route verifies + moves them. */
+  paperPending: "submissions/pending/",
+  bookPending: "book-submissions/pending/",
+  /** Private book manuscripts / covers once a book submission is accepted */
+  bookManuscripts: "book-submissions/manuscripts/",
+  bookCovers: "book-submissions/covers/",
 } as const;

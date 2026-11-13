@@ -25,7 +25,7 @@ export default function ContactPage() {
       <PageHero
         title="Contact Us"
         subtitle="Questions about submissions, reviews, or publication? Reach out."
-        image="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1920&q=80"
+        icon="contact"
       />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Grid container spacing={5}>

@@ -19,7 +19,7 @@ export function emailLayout(title: string, bodyHtml: string): string {
             </tr>
             <tr>
               <td style="padding:16px 32px;background:#f0f1f3;color:#8a8f98;font-size:12px;">
-                This is an automated message from the IJAAC editorial system. Please do not reply directly to this email.
+                This message was sent by the IJAAC editorial system. For any queries, write to ijaac.official@gmail.com.
               </td>
             </tr>
           </table>

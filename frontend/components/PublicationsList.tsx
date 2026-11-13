@@ -5,7 +5,6 @@ import type { Submission } from "@ijaac/shared";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -13,7 +12,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import CircularProgress from "@mui/material/CircularProgress";
-import Link from "next/link";
+import PaperCard from "@/components/PaperCard";
 
 const PAGE_SIZE = 10;
 
@@ -32,13 +31,15 @@ export default function PublicationsList({
   const [loading, setLoading] = React.useState(false);
   const [searching, setSearching] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // The query the current results belong to (search is trimmed and case-insensitive server-side).
+  const [activeQuery, setActiveQuery] = React.useState((initialQuery ?? "").trim());
 
   const loadMore = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(
-        `/api/publications?offset=${items.length}&limit=${PAGE_SIZE}&q=${encodeURIComponent(query)}`
+        `/api/publications?offset=${items.length}&limit=${PAGE_SIZE}&q=${encodeURIComponent(activeQuery)}`
       );
       if (!res.ok) throw new Error("Could not load more publications");
       const body = await res.json();
@@ -52,14 +53,25 @@ export default function PublicationsList({
 
   const runSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    const q = query.trim();
     setSearching(true);
     setError(null);
     try {
-      const res = await fetch(`/api/publications?offset=0&limit=${PAGE_SIZE}&q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/publications?offset=0&limit=${PAGE_SIZE}&q=${encodeURIComponent(q)}`);
       if (!res.ok) throw new Error("Search failed");
       const body = await res.json();
       setItems(body.items);
       setCurrentTotal(body.total);
+      setActiveQuery(q);
+      // keep the URL shareable without a server round-trip
+      try {
+        const url = new URL(window.location.href);
+        if (q) url.searchParams.set("q", q);
+        else url.searchParams.delete("q");
+        window.history.replaceState(null, "", url.toString());
+      } catch {
+        // ignore
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed");
     } finally {
@@ -87,51 +99,23 @@ export default function PublicationsList({
         />
       </Box>
 
+      {(activeQuery || currentTotal > 0) && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {activeQuery
+            ? `${currentTotal} result${currentTotal === 1 ? "" : "s"} for "${activeQuery}"`
+            : `${currentTotal} publication${currentTotal === 1 ? "" : "s"}`}
+        </Typography>
+      )}
+
       <Stack spacing={2}>
         {items.map((paper) => (
-          <Paper
-            key={paper.id}
-            component={Link}
-            href={`/publications/${paper.id}`}
-            variant="outlined"
-            sx={{
-              p: 3,
-              display: "block",
-              textDecoration: "none",
-              color: "inherit",
-              transition: "transform 0.15s ease, box-shadow 0.15s ease",
-              "&:hover": { transform: "translateY(-2px)", boxShadow: 3 },
-            }}
-          >
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              {paper.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {paper.authors.map((a) => a.name).join(", ")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Published{" "}
-              {new Date(paper.publishedAt ?? paper.submittedAt).toLocaleDateString("en-IN", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-              {paper.volume && paper.issueNumber
-                ? ` - Vol. ${paper.volume}, Issue ${paper.issueNumber}`
-                : ""}
-            </Typography>
-            <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 1.5, gap: 0.5 }}>
-              {paper.keywords.slice(0, 5).map((kw) => (
-                <Chip key={kw} label={kw} size="small" />
-              ))}
-            </Stack>
-          </Paper>
+          <PaperCard key={paper.id} paper={paper} variant="list" maxKeywords={5} />
         ))}
       </Stack>
 
       {items.length === 0 && (
         <Typography color="text.secondary" sx={{ py: 4 }}>
-          {query ? "No publications match your search." : "No publications yet."}
+          {activeQuery ? "No publications match your search." : "No publications yet."}
         </Typography>
       )}
 

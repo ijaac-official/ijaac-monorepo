@@ -1,9 +1,22 @@
 import Razorpay from "razorpay";
-import { discountedAmountPaise } from "@ijaac/shared";
-import { validateCoupon } from "@ijaac/data-store";
+import { discountedAmountPaise, type ChargeKind } from "@ijaac/shared";
+import { getSettings, validateCoupon } from "@ijaac/data-store";
 
-export function baseFeePaise(): number {
-  return Math.round(Number(process.env.SUBMISSION_FEE_INR ?? "1200") * 100);
+export const CHARGE_KINDS: ChargeKind[] = ["PAPER", "BOOK"];
+
+/** Parses a client-supplied kind; anything unknown/absent is PAPER (the original flow). */
+export function parseChargeKind(raw: unknown): ChargeKind | null {
+  if (raw === undefined || raw === null || raw === "") return "PAPER";
+  return raw === "PAPER" || raw === "BOOK" ? raw : null;
+}
+
+/**
+ * Base fee from the admin "Fees & Charges" settings (data/settings.json), which
+ * itself falls back to SUBMISSION_FEE_INR / BOOK_FEE_INR when never saved.
+ */
+export async function baseFeePaise(kind: ChargeKind = "PAPER"): Promise<number> {
+  const settings = await getSettings();
+  return kind === "BOOK" ? settings.bookFeeInPaise : settings.paperFeeInPaise;
 }
 
 export function getRazorpay(): Razorpay {
@@ -16,6 +29,7 @@ export function getRazorpay(): Razorpay {
 export type Quote =
   | {
       ok: true;
+      kind: ChargeKind;
       baseAmountPaise: number;
       finalAmountPaise: number;
       discountPercent: number;
@@ -23,17 +37,18 @@ export type Quote =
     }
   | { ok: false; error: string };
 
-/** Server-side price for a submission, with an optional coupon - never trusts a client-sent amount. */
-export async function quote(couponCode?: string | null): Promise<Quote> {
-  const base = baseFeePaise();
+/** Server-side price for a paper or book, with an optional coupon - never trusts a client-sent amount. */
+export async function quote(couponCode?: string | null, kind: ChargeKind = "PAPER"): Promise<Quote> {
+  const base = await baseFeePaise(kind);
   const code = couponCode?.trim();
-  if (!code) return { ok: true, baseAmountPaise: base, finalAmountPaise: base, discountPercent: 0 };
+  if (!code) return { ok: true, kind, baseAmountPaise: base, finalAmountPaise: base, discountPercent: 0 };
 
-  const check = await validateCoupon(code);
+  const check = await validateCoupon(code, kind);
   if (!check.ok) return { ok: false, error: check.reason };
 
   return {
     ok: true,
+    kind,
     baseAmountPaise: base,
     finalAmountPaise: discountedAmountPaise(base, check.coupon.discountPercent),
     discountPercent: check.coupon.discountPercent,

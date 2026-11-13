@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
 import { listPublishedPapersPage } from "@ijaac/data-store";
 import PageHero from "@/components/PageHero";
@@ -6,26 +8,41 @@ import PublicationsList from "@/components/PublicationsList";
 export const metadata = { title: "All Publications - IJAAC Journal" };
 export const revalidate = 0;
 
-export default async function PublicationsPage({
+async function PublicationsContent({
   searchParams,
 }: {
   searchParams: { q?: string };
 }) {
-  const query = searchParams.q ?? "";
+  const query = (searchParams.q ?? "").trim().replace(/\s+/g, " ");
   const { items, total } = await listPublishedPapersPage({ offset: 0, limit: 10, query }).catch(
     () => ({ items: [], total: 0 })
   );
 
   return (
     <>
+      <Container maxWidth="md" sx={{ py: 6 }}>
+        <PublicationsList key={query} initialItems={items} total={total} initialQuery={query} />
+      </Container>
+    </>
+  );
+}
+
+/** Banner renders immediately; only the S3-backed content waits behind a skeleton. */
+export default function PublicationsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
+  return (
+    <>
       <PageHero
         title="All Publications"
         subtitle="Every peer-reviewed paper published by the journal."
-        image="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80"
+        icon="publications"
       />
-      <Container maxWidth="md" sx={{ py: 6 }}>
-        <PublicationsList initialItems={items} total={total} initialQuery={query} />
-      </Container>
+      <Suspense fallback={<CardGridSkeleton bare count={4} mediaHeight={120} />}>
+        <PublicationsContent searchParams={searchParams}/>
+      </Suspense>
     </>
   );
 }

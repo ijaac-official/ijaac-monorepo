@@ -37,6 +37,53 @@ const theme = createTheme({
     borderRadius: 0,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        // Guard against accidental horizontal scroll. `clip` never creates a
+        // scroll container, so the sticky navbar keeps working. The `hidden`
+        // fallback goes on <html> only: there it propagates to the viewport,
+        // whereas `hidden` on <body> would make body a scroller and break sticky.
+        html: {
+          overflowX: "hidden",
+          maxWidth: "100%",
+          "@supports (overflow: clip)": { overflowX: "clip" },
+        },
+        body: {
+          maxWidth: "100%",
+          "@supports (overflow: clip)": { overflowX: "clip" },
+        },
+        // Plain text links inside content. Wrapped in :where() so the rule has
+        // zero specificity: any component that styles its own links (footer,
+        // nav, cards, buttons) keeps its look; bare <a> tags get this one.
+        ":where(a:not(.MuiButtonBase-root))": {
+          transition: "color 0.15s ease, text-decoration-color 0.15s ease",
+          textUnderlineOffset: "0.18em",
+        },
+        ":where(a:not(.MuiButtonBase-root):not(.MuiPaper-root):hover)": {
+          color: "#551319",
+          textDecoration: "underline",
+        },
+        ":where(a:focus-visible)": {
+          outline: "2px solid #d4a017",
+          outlineOffset: 2,
+        },
+      },
+    },
+    MuiLink: {
+      defaultProps: { underline: "hover" },
+      styleOverrides: {
+        root: ({ ownerState }) => ({
+          transition: "color 0.15s ease, text-decoration-color 0.15s ease",
+          textUnderlineOffset: "0.18em",
+          "&:focus-visible": { outline: "2px solid #d4a017", outlineOffset: 2 },
+          // Only primary-coloured links shift to the darker crimson; links given
+          // another colour (e.g. gold "Verify credential") keep it and just underline.
+          ...((ownerState.color === undefined || ownerState.color === "primary") && {
+            "&:hover": { color: "#551319" },
+          }),
+        }),
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
@@ -71,7 +118,7 @@ const theme = createTheme({
     },
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 600, borderRadius: 0 },
+        root: { fontWeight: 600, borderRadius: 999 },
       },
     },
     MuiOutlinedInput: {

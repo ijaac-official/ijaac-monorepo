@@ -71,8 +71,33 @@ export interface Submission {
   couponCode?: string;
   discountPercent?: number;
 
+  /** Public/private visibility of a published paper. Undefined means public. */
+  isPublic?: boolean;
+  /** "ADMIN" for papers entered directly by an editor (no checkout) */
+  source?: "AUTHOR" | "ADMIN";
+  /** Set once the certificate(s) + final paper have been emailed to every author */
+  certificatesSentAt?: string;
+  /** Peer-review assignments to approved reviewers */
+  reviewAssignments?: ReviewAssignment[];
+
   submittedAt: string;
   updatedAt: string;
+}
+
+export type ReviewAssignmentStatus = "ASSIGNED" | "COMPLETED" | "DECLINED";
+
+export interface ReviewAssignment {
+  reviewerId: string;
+  assignedAt: string;
+  status: ReviewAssignmentStatus;
+  completedAt?: string;
+  /** Editor's note of the reviewer's recommendation, e.g. "Accept with minor revisions" */
+  recommendation?: string;
+}
+
+/** True if a submission should be visible on the public site. */
+export function isPubliclyVisible(s: Pick<Submission, "status" | "isPublic">): boolean {
+  return s.status === "PUBLISHED" && s.isPublic !== false;
 }
 
 export type AdminRole = "SUPER_ADMIN" | "EDITOR";
@@ -95,11 +120,17 @@ export interface AdminUser {
   updatedAt: string;
 }
 
+/**
+ * Issues are monthly: one volume per year (Volume 1 = first year), 12 issues
+ * per volume, issue number = month (1-12).
+ */
 export interface Issue {
   id: string;
   volume: string;
   number: string;
   year: number;
+  /** 1-12 */
+  month?: number;
   title?: string;
   description?: string;
   coverImageUrl?: string;
@@ -137,8 +168,30 @@ export interface Reviewer {
   areasOfInterest: string[];
   displayOrder: number;
   isActive: boolean;
+  /**
+   * Registration state. Reviewers who apply via the public "Become a Reviewer"
+   * form start as PENDING. Undefined (legacy, admin-created) means APPROVED.
+   */
+  status?: ReviewerStatus;
+  phone?: string;
+  orcid?: string;
+  /** Highest qualification, e.g. "PhD in Computer Science" */
+  qualification?: string;
+  experienceYears?: number;
+  /** Optional note from the applicant to the editors */
+  motivation?: string;
+  appliedAt?: string;
+  approvedAt?: string;
+  /** Set when the reviewer profile was created by promoting an editorial board member */
+  sourceBoardMemberId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export type ReviewerStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export function isApprovedReviewer(r: Pick<Reviewer, "status">): boolean {
+  return r.status === undefined || r.status === "APPROVED";
 }
 
 export type BoardRole =
@@ -185,4 +238,115 @@ export interface ContactMessage {
   subject?: string;
   message: string;
   createdAt: string;
+}
+
+/** Singleton at data/site-stats.json */
+export interface SiteStats {
+  visits: number;
+  updatedAt: string;
+}
+
+export type PaymentRequestKind = "LINK" | "QR";
+export type PaymentRequestStatus = "CREATED" | "PAID" | "EXPIRED" | "CANCELLED";
+
+/** A custom Razorpay payment request (Payment Link or UPI QR) raised from the admin. */
+export interface PaymentRequest {
+  id: string;
+  kind: PaymentRequestKind;
+  /** plink_... for Payment Links, qr_... for UPI QR codes */
+  razorpayId: string;
+  amountInPaise: number;
+  description: string;
+  customer: { name?: string; email?: string; phone?: string };
+  submissionId?: string;
+  /** Payment Link short URL (LINK only) */
+  shortUrl?: string;
+  /** Razorpay-hosted QR image (QR only) */
+  qrImageUrl?: string;
+  status: PaymentRequestStatus;
+  paidAt?: string;
+  paymentIds?: string[];
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Fees & charges (admin-managed) and book publication submissions
+// ---------------------------------------------------------------------------
+
+/** What a checkout / coupon is for. */
+export type ChargeKind = "PAPER" | "BOOK";
+
+/** Coupon scope. Undefined on a Coupon means "ALL" (legacy coupons). */
+export type CouponScope = "PAPER" | "BOOK" | "ALL";
+
+// Declaration merge - adds the optional scope to the Coupon interface above.
+export interface Coupon {
+  /** Which checkout this coupon may be used for. Undefined = ALL. */
+  appliesTo?: CouponScope;
+}
+
+/** True if a coupon with this scope can be used for the given charge kind. */
+export function couponAppliesTo(scope: CouponScope | undefined, kind: ChargeKind): boolean {
+  return !scope || scope === "ALL" || scope === kind;
+}
+
+/** Singleton at data/settings.json */
+export interface JournalSettings {
+  paperFeeInPaise: number;
+  bookFeeInPaise: number;
+  currency: "INR";
+  updatedAt: string;
+  updatedById?: string;
+}
+
+export type BookSubmissionStatus = "PENDING" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED" | "PUBLISHED";
+
+export const BOOK_SUBMISSION_STATUSES: BookSubmissionStatus[] = [
+  "PENDING",
+  "UNDER_REVIEW",
+  "ACCEPTED",
+  "REJECTED",
+  "PUBLISHED",
+];
+
+export interface BookSubmission {
+  id: string;
+  title: string;
+  subtitle?: string;
+  authorName: string;
+  coAuthors?: string[];
+  email: string;
+  phone: string;
+  affiliation?: string;
+  category?: string;
+  synopsis: string;
+  pageCount?: number;
+  manuscriptKey: string;
+  manuscriptName: string;
+  manuscriptType: string;
+  manuscriptSize: number;
+  coverKey?: string;
+  coverType?: string;
+  status: BookSubmissionStatus;
+  reviewComment?: string;
+  payment?: {
+    orderId: string;
+    paymentId: string;
+    amountInPaise: number;
+    baseAmountInPaise?: number;
+    currency: string;
+    paidAt: string;
+    receiptNumber?: string;
+  };
+  couponCode?: string;
+  discountPercent?: number;
+  /** Book record created by "Publish to Books page" */
+  publishedBookId?: string;
+  decidedById?: string;
+  decidedAt?: string;
+  submittedAt: string;
+  updatedAt: string;
 }

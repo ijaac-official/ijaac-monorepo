@@ -26,6 +26,10 @@ import EditIcon from "@mui/icons-material/Edit";
 import ImageUploadField from "./ImageUploadField";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
+import Chip from "@mui/material/Chip";
+import Tooltip from "@mui/material/Tooltip";
+import { useSnackbar } from "notistack";
 
 const ROLES: BoardRole[] = ["EDITOR_IN_CHIEF", "ASSOCIATE_EDITOR", "MEMBER", "ADVISORY_BOARD"];
 
@@ -60,10 +64,36 @@ const EMPTY: FormState = {
 
 export default function EditorialBoardManager({
   initialMembers,
+  reviewerMemberIds = [],
 }: {
   initialMembers: EditorialBoardMember[];
+  /** Board member ids that already have an approved reviewer profile */
+  reviewerMemberIds?: string[];
 }) {
   const router = useRouter();
+  const { enqueueSnackbar } = useSnackbar();
+  const [promoting, setPromoting] = React.useState<string | null>(null);
+  const reviewerSet = React.useMemo(() => new Set(reviewerMemberIds), [reviewerMemberIds]);
+
+  const promote = async (m: EditorialBoardMember) => {
+    setPromoting(m.id);
+    try {
+      const res = await fetch(`/api/editorial-board/${m.id}/promote`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(typeof body?.error === "string" ? body.error : "Could not promote");
+      enqueueSnackbar(
+        body.created
+          ? `${m.name} is now also a reviewer - add their areas of expertise on the Reviewers page`
+          : `${m.name} already had a reviewer profile - it is now approved and active`,
+        { variant: "success" }
+      );
+      router.refresh();
+    } catch (err) {
+      enqueueSnackbar(err instanceof Error ? err.message : "Could not promote", { variant: "error" });
+    } finally {
+      setPromoting(null);
+    }
+  };
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [saving, setSaving] = React.useState(false);
@@ -151,10 +181,29 @@ export default function EditorialBoardManager({
                 <TableCell>
                   <Avatar src={m.photoUrl} sx={{ width: 40, height: 40 }} />
                 </TableCell>
-                <TableCell>{m.name}</TableCell>
+                <TableCell>
+                  {m.name}
+                  {reviewerSet.has(m.id) && (
+                    <Chip label="Reviewer" size="small" color="success" variant="outlined" sx={{ ml: 1 }} />
+                  )}
+                </TableCell>
                 <TableCell>{m.role.replace(/_/g, " ")}</TableCell>
                 <TableCell>{m.isActive ? "Yes" : "No"}</TableCell>
-                <TableCell align="right">
+                <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                  {!reviewerSet.has(m.id) && (
+                    <Tooltip title="Also make reviewer">
+                      <span>
+                        <IconButton
+                          onClick={() => promote(m)}
+                          size="small"
+                          disabled={promoting === m.id}
+                          aria-label={`Make ${m.name} a reviewer`}
+                        >
+                          <HowToRegIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
                   <IconButton onClick={() => openEdit(m)} size="small">
                     <EditIcon fontSize="small" />
                   </IconButton>

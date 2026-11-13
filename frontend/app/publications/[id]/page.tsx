@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
+import Link from "next/link";
+import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import { getSubmission } from "@ijaac/data-store";
+import { isPubliclyVisible } from "@ijaac/shared";
 import PageHero from "@/components/PageHero";
+import AuthorNames from "@/components/AuthorNames";
+import KeywordChips from "@/components/KeywordChips";
 
 export const revalidate = 0;
 
 async function getPublishedPaper(id: string) {
   const submission = await getSubmission(id);
-  if (!submission || submission.status !== "PUBLISHED") return null;
+  // Private papers (isPublic === false) are hidden from the public site.
+  if (!submission || !isPubliclyVisible(submission)) return null;
   return submission;
 }
 
@@ -46,11 +53,19 @@ export default async function PublicationDetailPage({ params }: { params: { id: 
 
   return (
     <>
-      <PageHero title={paper.title} />
+      <PageHero title={paper.title} icon="publications" />
       <Container maxWidth="md" sx={{ py: 6 }}>
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          {paper.authors.map((a) => a.name).join(", ")}
+        <Typography variant="overline" color="text.secondary" component="h2">
+          Authors
         </Typography>
+        <Box sx={{ mb: 2 }}>
+          <AuthorNames
+            authors={paper.authors}
+            correspondingEmail={paper.correspondingEmail}
+            variant="full"
+            credentialPaperId={paper.id}
+          />
+        </Box>
         {(paper.volume || paper.issueNumber) && (
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Volume {paper.volume}, Issue {paper.issueNumber}
@@ -75,21 +90,36 @@ export default async function PublicationDetailPage({ params }: { params: { id: 
           {paper.abstract}
         </Typography>
 
-        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ my: 2 }}>
-          {paper.keywords.map((kw) => (
-            <Chip key={kw} label={kw} size="small" />
-          ))}
-        </Stack>
+        {paper.keywords.length > 0 && (
+          <Box sx={{ my: 3 }}>
+            <Typography variant="overline" color="text.secondary" component="h2" sx={{ mb: 0.5 }}>
+              Keywords
+            </Typography>
+            <KeywordChips keywords={paper.keywords} linked />
+          </Box>
+        )}
 
-        <Button
-          href={`/article/view/${paper.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="contained"
-          sx={{ mt: 2 }}
-        >
-          Download Full Text (PDF)
-        </Button>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 3 }}>
+          <Button
+            href={`/article/view/${paper.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="contained"
+            startIcon={<PictureAsPdfOutlinedIcon />}
+          >
+            Download Full Text (PDF)
+          </Button>
+          <Button
+            component={Link}
+            href={`/credentials/publication/${paper.id}`}
+            variant="outlined"
+            color="secondary"
+            startIcon={<VerifiedOutlinedIcon />}
+            sx={{ color: "secondary.dark", borderColor: "secondary.main" }}
+          >
+            Verify this publication
+          </Button>
+        </Stack>
       </Container>
     </>
   );

@@ -7,3 +7,7 @@ export * from "./collections/issues";
 export * from "./collections/admin-users";
 export * from "./collections/contact-messages";
 export * from "./collections/coupons";
+export * from "./collections/site-stats";
+export * from "./collections/payment-requests";
+export * from "./collections/settings";
+export * from "./collections/book-submissions";

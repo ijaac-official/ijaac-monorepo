@@ -6,7 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 async function main() {
   // Imported after dotenv.config() so @ijaac/aws reads populated env vars.
   const { createAdminUser, listAdminUsers } = await import("./collections/admin-users");
-  const { createIssue, listIssues } = await import("./collections/issues");
+  const { createMonthlyIssue, listIssues } = await import("./collections/issues");
   const { createBook, listBooks } = await import("./collections/books");
   const { createReviewer, listReviewers } = await import("./collections/reviewers");
   const { createEditorialBoardMember, listEditorialBoard } = await import(
@@ -26,30 +26,15 @@ async function main() {
   }
 
   // --- Issues --------------------------------------------------------------
+  // Issues are monthly: one volume per year, issue number = month (1-12).
   if ((await listIssues()).length === 0) {
-    await createIssue({
-      volume: "5",
-      number: "2",
-      year: 2026,
-      title: "Vol. 5, Issue 2 (Mar-Apr 2026)",
-      publishDate: new Date("2026-03-01").toISOString(),
-      isCurrent: true,
-    });
-    await createIssue({
-      volume: "5",
-      number: "1",
-      year: 2026,
-      title: "Vol. 5, Issue 1 (Jan-Feb 2026)",
-      publishDate: new Date("2026-01-01").toISOString(),
-    });
-    await createIssue({
-      volume: "4",
-      number: "6",
-      year: 2025,
-      title: "Vol. 4, Issue 6 (Nov-Dec 2025)",
-      publishDate: new Date("2025-11-01").toISOString(),
-    });
-    console.log("Seeded issues.");
+    const now = new Date();
+    const year = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    for (let month = 1; month <= currentMonth; month++) {
+      await createMonthlyIssue({ year, month, isCurrent: month === currentMonth });
+    }
+    console.log(`Seeded ${currentMonth} monthly issues for ${year}.`);
   } else {
     console.log("Issues already exist, skipping.");
   }

@@ -2,6 +2,7 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
@@ -133,6 +134,73 @@ export async function presignGetUrl(key: string, expiresInSeconds = 900): Promis
   const client = getS3Client();
   const command = new GetObjectCommand({ Bucket: getBucketName(), Key: key });
   return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+/**
+ * Short-lived signed URL the browser can PUT a file to directly (bypasses the
+ * ~4.5 MB serverless request-body limit). The browser must send exactly
+ * `contentType` as its Content-Type header, since it is part of the signature.
+ * Requires bucket CORS to allow PUT from the site origins.
+ */
+export async function presignPutUrl(
+  key: string,
+  contentType: string,
+  expiresInSeconds = 600
+): Promise<string> {
+  const client = getS3Client();
+  const command = new PutObjectCommand({ Bucket: getBucketName(), Key: key, ContentType: contentType });
+  return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+}
+
+export interface ObjectHead {
+  size: number;
+  contentType?: string;
+}
+
+/** HeadObject - size and type of an object, or null if it does not exist. */
+export async function headObject(key: string): Promise<ObjectHead | null> {
+  const client = getS3Client();
+  try {
+    const res = await client.send(new HeadObjectCommand({ Bucket: getBucketName(), Key: key }));
+    return { size: Number(res.ContentLength ?? 0), contentType: res.ContentType };
+  } catch (err: unknown) {
+    if (isNoSuchKey(err) || (err as { name?: string } | undefined)?.name === "NotFound") return null;
+    throw err;
+  }
+}
+
+/** Ranged GET of the first `length` bytes (magic-byte checks). Null if the object is missing. */
+export async function getObjectHead(key: string, length = 1024): Promise<Uint8Array | null> {
+  const client = getS3Client();
+  try {
+    const res = await client.send(
+      new GetObjectCommand({ Bucket: getBucketName(), Key: key, Range: `bytes=0-${Math.max(0, length - 1)}` })
+    );
+    const bytes = await res.Body?.transformToByteArray();
+    return bytes ?? new Uint8Array();
+  } catch (err: unknown) {
+    if (isNoSuchKey(err)) return null;
+    throw err;
+  }
+}
+
+/** Streams an object (large-file download proxies). Null if the object is missing. */
+export async function getObjectStream(
+  key: string
+): Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string } | null> {
+  const client = getS3Client();
+  try {
+    const res = await client.send(new GetObjectCommand({ Bucket: getBucketName(), Key: key }));
+    if (!res.Body) return null;
+    return {
+      stream: res.Body.transformToWebStream() as ReadableStream,
+      contentLength: res.ContentLength != null ? Number(res.ContentLength) : undefined,
+      contentType: res.ContentType,
+    };
+  } catch (err: unknown) {
+    if (isNoSuchKey(err)) return null;
+    throw err;
+  }
 }
 
 /** Direct URL for objects under the public/ prefix (served via bucket policy or CDN). */

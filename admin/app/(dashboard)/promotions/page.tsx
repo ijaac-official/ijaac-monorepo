@@ -16,7 +16,8 @@ export default async function PromotionsPage() {
         Create a percentage-discount coupon with a fixed number of uses. A 100% coupon makes the
         submission free and skips checkout; anything less charges the discounted amount through
         Razorpay. Prices are calculated server-side on every use, never trusted from the client.
-        &quot;Stop Immediately&quot; kills a coupon even if uses remain.
+        &quot;Stop Immediately&quot; kills a coupon even if uses remain. Coupons can be edited at any time;
+        only coupons that have never been used can be deleted.
       </Typography>
       <CouponManager
         initialCoupons={coupons}

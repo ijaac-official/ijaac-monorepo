@@ -1,4 +1,3 @@
-import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import List from "@mui/material/List";
@@ -6,26 +5,19 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Chip from "@mui/material/Chip";
 import Link from "next/link";
-import { listSubmissions } from "@ijaac/data-store";
-import type { SubmissionStatus } from "@ijaac/shared";
+import { listAllSubmissionsRaw } from "@ijaac/data-store";
+import type { Submission } from "@ijaac/shared";
+import DashboardStats from "@/components/stats/DashboardStats";
+import { addDays, istDate } from "@/components/stats/types";
+import { computeStats } from "@/app/api/stats/compute";
 
 export const revalidate = 0;
 
-const STAT_LABELS: { status: SubmissionStatus; label: string; color: string }[] = [
-  { status: "PENDING", label: "Pending Review", color: "#b8860b" },
-  { status: "UNDER_REVIEW", label: "Under Review", color: "#1976d2" },
-  { status: "APPROVED", label: "Approved", color: "#2e7d32" },
-  { status: "PUBLISHED", label: "Published", color: "#0d2b4e" },
-  { status: "REJECTED", label: "Rejected", color: "#c62828" },
-];
-
 export default async function DashboardHomePage() {
-  const submissions = await listSubmissions().catch(() => []);
-  const counts = submissions.reduce<Record<string, number>>((acc, s) => {
-    acc[s.status] = (acc[s.status] ?? 0) + 1;
-    return acc;
-  }, {});
-  const recent = submissions.slice(0, 8);
+  const submissions: Submission[] = await listAllSubmissionsRaw().catch(() => []);
+  const today = istDate(Date.now());
+  const initialStats = computeStats(submissions, { from: addDays(today, -27), to: today });
+  const recent = [...submissions].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)).slice(0, 8);
 
   return (
     <>
@@ -33,27 +25,7 @@ export default async function DashboardHomePage() {
         Dashboard
       </Typography>
 
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {STAT_LABELS.map((stat) => (
-          <Grid item xs={12} sm={6} md={2.4} key={stat.status}>
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2.5,
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                "&:hover": { transform: "translateY(-3px)", boxShadow: 3 },
-              }}
-            >
-              <Typography variant="h4" fontWeight={700} sx={{ color: stat.color }}>
-                {counts[stat.status] ?? 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {stat.label}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
+      <DashboardStats initial={initialStats} initialPreset="28d" />
 
       <Paper variant="outlined">
         <Typography variant="subtitle1" fontWeight={600} sx={{ p: 2 }}>
@@ -61,12 +33,7 @@ export default async function DashboardHomePage() {
         </Typography>
         <List disablePadding>
           {recent.map((s) => (
-            <ListItemButton
-              key={s.id}
-              component={Link}
-              href={`/submissions/${s.id}`}
-              divider
-            >
+            <ListItemButton key={s.id} component={Link} href={`/submissions/${s.id}`} divider>
               <ListItemText
                 primary={s.title}
                 secondary={`${s.correspondingEmail} · ${new Date(s.submittedAt).toLocaleDateString()}`}

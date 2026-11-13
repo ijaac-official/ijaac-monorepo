@@ -9,106 +9,169 @@ import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import Chip from "@mui/material/Chip";
 import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import IconButton from "@mui/material/IconButton";
-import SearchIcon from "@mui/icons-material/Search";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import AddIcon from "@mui/icons-material/Add";
 import Link from "next/link";
-import { listSubmissions } from "@ijaac/data-store";
-import type { SubmissionStatus } from "@ijaac/shared";
+import { filterSubmissions, listAllSubmissionsRaw, listIssues, type SubmissionFilter } from "@ijaac/data-store";
+import { SUBMISSION_STATUSES, formatInr, type SubmissionStatus } from "@ijaac/shared";
+import SubmissionFilters from "@/components/submissions/SubmissionFilters";
+import VisibilityToggle from "@/components/submissions/VisibilityToggle";
+import { FILTER_KEYS, STATUS_COLORS, STATUS_LABELS, issueLabel, type FilterValues } from "@/components/submissions/meta";
 
 export const revalidate = 0;
 
-const TABS: { value: string; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "UNDER_REVIEW", label: "Under Review" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "PUBLISHED", label: "Published" },
-  { value: "REJECTED", label: "Rejected" },
-];
+type SearchParams = Partial<Record<keyof FilterValues | "status", string | string[]>>;
 
-export default async function SubmissionsPage({
-  searchParams,
-}: {
-  searchParams: { status?: string; q?: string };
-}) {
-  const activeStatus = searchParams.status ?? "ALL";
-  const query = searchParams.q ?? "";
-  const submissions = await listSubmissions({
-    status: activeStatus === "ALL" ? undefined : (activeStatus as SubmissionStatus),
-    query: query || undefined,
-  }).catch(() => []);
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+export default async function SubmissionsPage({ searchParams }: { searchParams: SearchParams }) {
+  const values = Object.fromEntries(FILTER_KEYS.map((k) => [k, one(searchParams[k])])) as FilterValues;
+  const rawStatus = one(searchParams.status);
+  const activeStatus = (SUBMISSION_STATUSES as string[]).includes(rawStatus) ? (rawStatus as SubmissionStatus) : "ALL";
+
+  // Status is applied in memory so each tab can show its count for the other filters.
+  const filter: SubmissionFilter = {
+    query: values.q || undefined,
+    author: values.author || undefined,
+    issueId: values.issue || undefined,
+    visibility: values.visibility === "public" || values.visibility === "private" ? values.visibility : undefined,
+    paid: values.paid === "paid" ? true : values.paid === "waived" ? false : undefined,
+    from: isDate(values.from) ? values.from : undefined,
+    to: isDate(values.to) ? values.to : undefined,
+  };
+
+  const [allSubmissions, issues] = await Promise.all([
+    listAllSubmissionsRaw().catch(() => []),
+    listIssues().catch(() => []),
+  ]);
+  const matching = filterSubmissions(allSubmissions, filter);
+  const issueById = new Map(issues.map((i) => [i.id, i]));
+
+  const counts: Record<string, number> = { ALL: matching.length };
+  for (const s of matching) counts[s.status] = (counts[s.status] ?? 0) + 1;
+  const submissions = activeStatus === "ALL" ? matching : matching.filter((s) => s.status === activeStatus);
 
   const tabHref = (status: string) => {
     const params = new URLSearchParams();
+    for (const k of FILTER_KEYS) if (values[k]) params.set(k, values[k]);
     if (status !== "ALL") params.set("status", status);
-    if (query) params.set("q", query);
     const qs = params.toString();
     return qs ? `/submissions?${qs}` : "/submissions";
   };
 
   return (
     <>
-      <Typography variant="h5" fontWeight={600} gutterBottom>
-        Submissions
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Typography variant="h5" fontWeight={600}>
+          Submissions
+        </Typography>
+        <Button component={Link} href="/submissions/new" variant="contained" startIcon={<AddIcon />}>
+          Add Paper
+        </Button>
+      </Stack>
 
-      <Box component="form" method="GET" sx={{ mb: 2, maxWidth: 420 }}>
-        {activeStatus !== "ALL" && <input type="hidden" name="status" value={activeStatus} />}
-        <TextField
-          name="q"
-          defaultValue={query}
-          placeholder="Search by title, keyword, or author"
-          size="small"
-          fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <IconButton type="submit" size="small" edge="start">
-                  <SearchIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
+      <SubmissionFilters
+        initial={values}
+        issues={issues}
+        resultCount={submissions.length}
+        totalCount={allSubmissions.length}
+      />
 
       <Paper variant="outlined">
-        <Tabs value={activeStatus} sx={{ px: 1, borderBottom: 1, borderColor: "divider" }}>
-          {TABS.map((tab) => (
-            <Tab key={tab.value} value={tab.value} label={tab.label} component={Link} href={tabHref(tab.value)} />
+        <Tabs
+          value={activeStatus}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ px: 1, borderBottom: 1, borderColor: "divider" }}
+        >
+          {(["ALL", ...SUBMISSION_STATUSES] as const).map((status) => (
+            <Tab
+              key={status}
+              value={status}
+              label={`${status === "ALL" ? "All" : STATUS_LABELS[status]} (${counts[status] ?? 0})`}
+              component={Link}
+              href={tabHref(status)}
+              scroll={false}
+            />
           ))}
         </Tabs>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Corresponding Author</TableCell>
-              <TableCell>Submitted</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {submissions.map((s) => (
-              <TableRow key={s.id} hover>
-                <TableCell sx={{ maxWidth: 420 }}>
-                  <Link href={`/submissions/${s.id}`} style={{ color: "inherit", textDecoration: "none", fontWeight: 500 }}>
-                    {s.title}
-                  </Link>
-                </TableCell>
-                <TableCell>{s.correspondingEmail}</TableCell>
-                <TableCell>{new Date(s.submittedAt).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Chip label={s.status.replace("_", " ")} size="small" />
-                </TableCell>
+        <Box sx={{ overflowX: "auto" }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Title</TableCell>
+                <TableCell>Authors</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Issue</TableCell>
+                <TableCell>Submitted</TableCell>
+                <TableCell>Fee</TableCell>
+                <TableCell align="center">Public</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {submissions.map((s) => {
+                const first = s.authors[0];
+                const issue = s.issueId ? issueById.get(s.issueId) : undefined;
+                return (
+                  <TableRow key={s.id} hover>
+                    <TableCell sx={{ maxWidth: 380, minWidth: 220 }}>
+                      <Link href={`/submissions/${s.id}`} style={{ color: "inherit", textDecoration: "none" }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={500}
+                          sx={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                        >
+                          {s.title}
+                        </Typography>
+                      </Link>
+                      {s.source === "ADMIN" && (
+                        <Chip label="Admin entry" size="small" variant="outlined" sx={{ mt: 0.5, height: 20, fontSize: 11 }} />
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>
+                      <Typography variant="body2">{first?.name ?? s.correspondingEmail}</Typography>
+                      {s.authors.length > 1 && (
+                        <Typography variant="caption" color="text.secondary">
+                          +{s.authors.length - 1} more
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={STATUS_LABELS[s.status]} color={STATUS_COLORS[s.status]} size="small" />
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      {issue ? issueLabel(issue) : s.volume ? `Vol. ${s.volume}, Issue ${s.issueNumber ?? "-"}` : "-"}
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>{new Date(s.submittedAt).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      {s.payment ? (
+                        formatInr(s.payment.amountInPaise)
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          {s.source === "ADMIN" ? "None" : "Waived"}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      <VisibilityToggle submissionId={s.id} isPublic={s.isPublic !== false} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Box>
         {submissions.length === 0 && (
           <Typography color="text.secondary" sx={{ p: 3 }}>
-            No submissions match this search.
+            No submissions match these filters.
           </Typography>
         )}
       </Paper>

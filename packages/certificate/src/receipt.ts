@@ -1,4 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { toWinAnsiLine } from "./text";
 
 export interface ReceiptInput {
   receiptNumber: string;
@@ -15,6 +16,10 @@ export interface ReceiptInput {
   razorpayOrderId: string;
   journalName?: string;
   contactEmail?: string;
+  /** Line-item description. Defaults to "Manuscript submission & processing fee". */
+  itemLabel?: string;
+  /** Heading above the title. Defaults to "Manuscript". */
+  titleLabel?: string;
 }
 
 const crimson = rgb(0.48, 0.12, 0.17);
@@ -23,11 +28,20 @@ const gray = rgb(0.35, 0.35, 0.35);
 const ink = rgb(0.1, 0.1, 0.1);
 const M = 54;
 
-// WinAnsi (standard fonts) has no ₹ glyph, so amounts print as "INR".
+// WinAnsi (standard fonts) has no rupee glyph, so amounts print as "INR".
 const inr = (paise: number) =>
   `INR ${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export async function generateReceiptPdf(input: ReceiptInput): Promise<Uint8Array> {
+export async function generateReceiptPdf(raw: ReceiptInput): Promise<Uint8Array> {
+  // Payer names / titles may contain characters the standard fonts cannot encode.
+  const input: ReceiptInput = {
+    ...raw,
+    payerName: toWinAnsiLine(raw.payerName),
+    payerEmail: toWinAnsiLine(raw.payerEmail),
+    paperTitle: toWinAnsiLine(raw.paperTitle),
+    couponCode: raw.couponCode ? toWinAnsiLine(raw.couponCode) : raw.couponCode,
+    journalName: raw.journalName ? toWinAnsiLine(raw.journalName) : raw.journalName,
+  };
   const doc = await PDFDocument.create();
   const page = doc.addPage([595.28, 841.89]);
   const { width } = page.getSize();
@@ -59,7 +73,7 @@ export async function generateReceiptPdf(input: ReceiptInput): Promise<Uint8Arra
   }
 
   y -= 6;
-  page.drawText("Manuscript", { x: M, y, size: 10, font: bold, color: gray });
+  page.drawText(input.titleLabel ?? "Manuscript", { x: M, y, size: 10, font: bold, color: gray });
   y -= 15;
   for (const line of wrap(input.paperTitle, regular, 11, width - M * 2)) {
     page.drawText(line, { x: M, y, size: 11, font: regular, color: ink });
@@ -72,7 +86,7 @@ export async function generateReceiptPdf(input: ReceiptInput): Promise<Uint8Arra
   drawRight(page, "Amount", width - M - 8, y + 3, bold, 10);
   y -= 26;
 
-  page.drawText("Manuscript submission & processing fee", { x: M + 8, y, size: 10.5, font: regular, color: ink });
+  page.drawText(input.itemLabel ?? "Manuscript submission & processing fee", { x: M + 8, y, size: 10.5, font: regular, color: ink });
   drawRight(page, inr(input.baseAmountPaise), width - M - 8, y, regular, 10.5);
   y -= 20;
 

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useSnackbar } from "notistack";
 import type { Reviewer } from "@ijaac/shared";
 import Button from "@mui/material/Button";
 import Table from "@mui/material/Table";
@@ -25,6 +26,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import ImageUploadField from "./ImageUploadField";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import Chip from "@mui/material/Chip";
+import Tooltip from "@mui/material/Tooltip";
 
 type FormState = {
   id?: string;
@@ -55,8 +59,18 @@ const EMPTY: FormState = {
   isActive: true,
 };
 
-export default function ReviewersManager({ initialReviewers }: { initialReviewers: Reviewer[] }) {
+export default function ReviewersManager({
+  initialReviewers,
+  completedCounts = {},
+  frontendUrl,
+}: {
+  initialReviewers: Reviewer[];
+  /** reviewerId -> completed reviews */
+  completedCounts?: Record<string, number>;
+  frontendUrl?: string;
+}) {
   const router = useRouter();
+  const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [saving, setSaving] = React.useState(false);
@@ -107,7 +121,10 @@ export default function ReviewersManager({ initialReviewers }: { initialReviewer
       });
       if (!res.ok) throw new Error("Save failed");
       setOpen(false);
+      enqueueSnackbar(form.id ? "Reviewer updated" : "Reviewer added", { variant: "success" });
       router.refresh();
+    } catch {
+      enqueueSnackbar("Could not save reviewer", { variant: "error" });
     } finally {
       setSaving(false);
     }
@@ -115,7 +132,9 @@ export default function ReviewersManager({ initialReviewers }: { initialReviewer
 
   const remove = async (id: string) => {
     if (!confirm("Delete this reviewer?")) return;
-    await fetch(`/api/reviewers/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/reviewers/${id}`, { method: "DELETE" });
+    if (res.ok) enqueueSnackbar("Reviewer deleted", { variant: "success" });
+    else enqueueSnackbar("Could not delete reviewer", { variant: "error" });
     router.refresh();
   };
 
@@ -134,7 +153,8 @@ export default function ReviewersManager({ initialReviewers }: { initialReviewer
               <TableCell>Photo</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Affiliation</TableCell>
-              <TableCell>Active</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="center">Reviews</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -144,10 +164,40 @@ export default function ReviewersManager({ initialReviewers }: { initialReviewer
                 <TableCell>
                   <Avatar src={r.photoUrl} sx={{ width: 40, height: 40 }} />
                 </TableCell>
-                <TableCell>{r.name}</TableCell>
+                <TableCell>
+                  {r.name}
+                  {r.email && (
+                    <Typography variant="caption" color="text.secondary" component="div">
+                      {r.email}
+                    </Typography>
+                  )}
+                </TableCell>
                 <TableCell>{r.affiliation}</TableCell>
-                <TableCell>{r.isActive ? "Yes" : "No"}</TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={0.5}>
+                    <Chip size="small" color="success" variant="outlined" label="Approved" />
+                    <Chip
+                      size="small"
+                      color={r.isActive ? "primary" : "default"}
+                      variant={r.isActive ? "filled" : "outlined"}
+                      label={r.isActive ? "Public" : "Hidden"}
+                    />
+                  </Stack>
+                </TableCell>
+                <TableCell align="center">{completedCounts[r.id] ?? 0}</TableCell>
                 <TableCell align="right">
+                  {frontendUrl && r.isActive && (
+                    <Tooltip title="View public profile">
+                      <IconButton
+                        size="small"
+                        href={`${frontendUrl}/reviewers/${r.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <OpenInNewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   <IconButton onClick={() => openEdit(r)} size="small">
                     <EditIcon fontSize="small" />
                   </IconButton>

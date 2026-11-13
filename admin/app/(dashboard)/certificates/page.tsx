@@ -14,8 +14,8 @@ export default function CertificatesPage() {
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         This is the certificate automatically generated and emailed to every author when a
-        submission is approved. Placeholder values are shown below - the real certificate uses the
-        author's name, paper title, and volume/issue.
+        submission is approved (and again on publication if not yet sent). Placeholder values are shown below - the real certificate uses the
+        author's name, affiliation, paper title, volume/issue, article number and a verification link (www.ijaac.in/credentials/author/...).
       </Typography>
 
       <Paper variant="outlined" sx={{ p: 3, mb: 3, maxWidth: 480 }}>

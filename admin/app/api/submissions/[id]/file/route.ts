@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     status: 200,
     headers: {
       "Content-Type": contentType,
-      "Content-Disposition": `${disposition}; filename="${fileName.replace(/"/g, "")}"`,
+      "Content-Disposition": `${disposition}; filename="${fileName.replace(/[^\x20-\x7e]|"/g, "_")}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Cache-Control": "private, no-store",
     },
   });
