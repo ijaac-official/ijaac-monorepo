@@ -66,7 +66,10 @@ export class TypesetError extends Error {
 
 const JOURNAL_NAME_DEFAULT = "International Journal of Applied AI & Computing";
 const JOURNAL_ABBR = "IJAAC";
-const PUBLISHER_DEFAULT = "IJAAC";
+/** ISSN (India): publisher name + place of publication on every page, full address on the cover. */
+const PUBLISHER_DEFAULT = "Vijay K Malviya";
+const PLACE_OF_PUBLICATION = "Indore, India";
+const PUBLISHER_ADDRESS = "M 119, Silicon City, Indore, Madhya Pradesh 452013, India";
 
 const A4: [number, number] = [595.28, 841.89];
 const MARGIN_X = 62;
@@ -309,6 +312,10 @@ function drawFrontMatter(doc: PDFDocument, f: Fonts, logo: PDFImage | undefined,
     leading: 11,
     align: "center",
   });
+  flow.words(
+    textToWords(`Publisher: ${meta.publisherName}, ${PUBLISHER_ADDRESS}`, f.sans, 7.5, gray, flow.contentWidth),
+    { leading: 10, align: "center" }
+  );
   flow.y -= 8;
   flow.rule(crimson, 1.4);
   flow.y -= 2.5;
@@ -496,7 +503,7 @@ function drawFooter(page: PDFPage, f: Fonts, meta: Meta, pageNum: number, total:
   const citation = truncateToWidth(meta.shortCitation, f.sans, 7, right - margin - pageLabelWidth - 14);
   v.text(citation, margin, 19, f.sans, 7, gray);
 
-  const license = `${COPYRIGHT} ${meta.year} The Author(s). Open access under CC BY 4.0. Published by ${meta.publisherName}.`;
+  const license = `${COPYRIGHT} ${meta.year} The Author(s). Open access under CC BY 4.0. Published by ${meta.publisherName}, ${PLACE_OF_PUBLICATION}.`;
   v.text(truncateToWidth(license, f.sansItalic, 6.5, right - margin - 70), margin, 9.5, f.sansItalic, 6.5, gold);
   const site = "www.ijaac.in";
   v.text(site, right - f.sans.widthOfTextAtSize(site, 6.5), 9.5, f.sans, 6.5, gray);

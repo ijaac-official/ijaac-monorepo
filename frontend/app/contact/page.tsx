@@ -3,6 +3,9 @@ import JsonLd from "@/components/JsonLd";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import { PUBLISHER } from "@ijaac/shared";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
@@ -42,6 +45,34 @@ export default function ContactPage() {
           </Grid>
           <Grid item xs={12} md={5}>
             <Stack spacing={3}>
+              <Paper variant="outlined" sx={{ p: 3, borderTop: "3px solid", borderTopColor: "primary.main" }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
+                  <BusinessOutlinedIcon color="primary" />
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    Publisher
+                  </Typography>
+                </Stack>
+                <Box component="address" sx={{ fontStyle: "normal" }}>
+                  <Typography variant="body2" fontWeight={600}>
+                    {PUBLISHER.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {PUBLISHER.street}
+                    <br />
+                    {PUBLISHER.city}, {PUBLISHER.state}
+                    {PUBLISHER.pin ? ` - ${PUBLISHER.pin}` : ""}
+                    <br />
+                    {PUBLISHER.country}
+                  </Typography>
+                </Box>
+                <Typography variant="body2" sx={{ mt: 1.5 }}>
+                  <b>Place of publication:</b> {PUBLISHER.placeOfPublication}
+                </Typography>
+                <Typography variant="body2">
+                  <b>Publisher type:</b> {PUBLISHER.type}
+                </Typography>
+              </Paper>
+
               <Paper variant="outlined" sx={{ p: 3 }}>
                 <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
                   <EmailOutlinedIcon color="primary" />

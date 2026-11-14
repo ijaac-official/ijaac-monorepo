@@ -9,6 +9,7 @@ import Image from "next/image";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import SecurePaymentBadge from "@/components/SecurePaymentBadge";
+import { PUBLISHER, publisherAddress } from "@ijaac/shared";
 
 /** Mirrors every link in the header navigation. */
 const COLUMNS: { title: string; links: [string, string][] }[] = [
@@ -121,9 +122,14 @@ export default function Footer() {
             alignItems="center"
             sx={{ py: 2.5, textAlign: { xs: "center", md: "left" } }}
           >
-            <Typography variant="body2" sx={{ opacity: 0.7 }}>
-              © {new Date().getFullYear()} IJAAC Journal. All rights reserved. Published under CC BY 4.0.
-            </Typography>
+            <Box>
+              <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                Published by {PUBLISHER.name}, {publisherAddress()}. Place of publication: {PUBLISHER.placeOfPublication}.
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                © {new Date().getFullYear()} IJAAC Journal. All rights reserved. Published under CC BY 4.0.
+              </Typography>
+            </Box>
             <SecurePaymentBadge tone="dark" />
           </Stack>
         </Container>

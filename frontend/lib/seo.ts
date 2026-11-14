@@ -1,3 +1,4 @@
+import { PUBLISHER } from "@ijaac/shared";
 import type { Metadata } from "next";
 import { SUBJECT_AREA_TITLES } from "./journal-content";
 
@@ -86,7 +87,15 @@ export function organizationJsonLd() {
     url: SITE_URL,
     logo: absoluteUrl("/logo.png"),
     email: JOURNAL_EMAIL,
-    address: { "@type": "PostalAddress", addressCountry: "IN" },
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: PUBLISHER.street,
+      addressLocality: PUBLISHER.city,
+      addressRegion: PUBLISHER.state,
+      ...(PUBLISHER.pin ? { postalCode: PUBLISHER.pin } : {}),
+      addressCountry: "IN",
+    },
+    founder: { "@type": "Person", name: PUBLISHER.name },
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "editorial office",

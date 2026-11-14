@@ -1,3 +1,4 @@
+import { PUBLISHER } from "@ijaac/shared";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
@@ -93,7 +94,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       citation_online_date: publicationDate,
       citation_journal_title: JOURNAL_NAME,
       citation_journal_abbrev: JOURNAL_SHORT,
-      citation_publisher: JOURNAL_NAME,
+      citation_publisher: PUBLISHER.name,
       ...(volume ? { citation_volume: volume } : {}),
       ...(issueNumber ? { citation_issue: issueNumber } : {}),
       citation_abstract_html_url: absoluteUrl(path),
