@@ -30,6 +30,7 @@ import {
 import PageHero from "@/components/PageHero";
 import AuthorNames from "@/components/AuthorNames";
 import KeywordChips from "@/components/KeywordChips";
+import ProseText from "@/components/ProseText";
 
 export const revalidate = 0;
 
@@ -200,9 +201,7 @@ export default async function PublicationDetailPage({ params }: { params: { id: 
         <Typography variant="h6" gutterBottom fontWeight={600}>
           Abstract
         </Typography>
-        <Typography variant="body1" paragraph sx={{ whiteSpace: "pre-wrap" }}>
-          {paper.abstract}
-        </Typography>
+        <ProseText text={paper.abstract} sx={{ mb: 2 }} />
 
         {paper.keywords.length > 0 && (
           <Box sx={{ my: 3 }}>

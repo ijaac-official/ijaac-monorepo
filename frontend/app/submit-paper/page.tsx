@@ -1,4 +1,5 @@
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { JUSTIFIED_SX } from "@/lib/text";
 import JsonLd from "@/components/JsonLd";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
@@ -71,13 +72,13 @@ export default function SubmitPaperPage() {
                   <Typography variant="body2" color="text.secondary">
                     1. Editorial screening within a few days of submission
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={JUSTIFIED_SX}>
                     2. Double-blind peer review by subject-matter reviewers
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={JUSTIFIED_SX}>
                     3. Editorial decision emailed to the corresponding author
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={JUSTIFIED_SX}>
                     4. Approved papers receive a certificate of publication
                   </Typography>
                 </Stack>
@@ -87,7 +88,7 @@ export default function SubmitPaperPage() {
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                   Need Help?
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, mb: 1.5 }}>
+                <Typography variant="body2" sx={{ ...JUSTIFIED_SX, opacity: 0.9, mb: 1.5 }}>
                   Questions about formatting, scope, or the review process?
                 </Typography>
                 <Link href="/contact" style={{ color: "inherit" }}>

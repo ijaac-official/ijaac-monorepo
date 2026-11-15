@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { listIssues, listPublicPapers, listReviewers } from "@ijaac/data-store";
+import { listIssues, listPublicPapers, listReviewers, listEditorialBoard } from "@ijaac/data-store";
 import { SITE_URL } from "@/lib/seo";
 
 export const revalidate = 3600;
@@ -45,11 +45,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // listPublicPapers = published AND not hidden, so private papers never leak into the sitemap.
-  const [papers, issues, reviewers] = await Promise.all([
+  const [papers, issues, reviewers, editors] = await Promise.all([
     listPublicPapers().catch(() => []),
     listIssues().catch(() => []),
     listReviewers({ activeOnly: true }).catch(() => []),
+    listEditorialBoard({ activeOnly: true }).catch(() => []),
   ]);
+
+  const editorRoutes: MetadataRoute.Sitemap = editors.map((m) => ({
+    url: `${SITE_URL}/editorial-board/${encodeURIComponent(m.id)}`,
+    lastModified: toDate(m.updatedAt, m.createdAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
 
   const paperRoutes: MetadataRoute.Sitemap = papers.flatMap((paper) => {
     const lastModified = toDate(paper.updatedAt, paper.publishedAt);
@@ -83,5 +91,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  return [...staticRoutes, ...paperRoutes, ...issueRoutes, ...reviewerRoutes];
+  return [...staticRoutes, ...paperRoutes, ...issueRoutes, ...reviewerRoutes, ...editorRoutes];
 }

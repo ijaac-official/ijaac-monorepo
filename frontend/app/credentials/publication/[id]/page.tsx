@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { JUSTIFIED_SX } from "@/lib/text";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
@@ -65,7 +66,7 @@ export default async function PublicationCredentialPage({ params }: { params: { 
         {record.title}
       </Typography>
 
-      <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.75 }}>
+      <Typography variant="body1" lang="en" sx={{ ...JUSTIFIED_SX, mb: 3, px: { xs: 0.5, md: 1 }, lineHeight: 1.7 }}>
         This paper was peer reviewed and published in <b>{JOURNAL_NAME}</b>, {record.issueLabel}.
       </Typography>
 

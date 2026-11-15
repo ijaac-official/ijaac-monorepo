@@ -1,4 +1,5 @@
 import Box from "@mui/material/Box";
+import { JUSTIFIED_SX } from "@/lib/text";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
@@ -70,7 +71,7 @@ export default function Footer() {
             >
               <Image src="/logo.png" alt="IJAAC Journal" width={110} height={74} style={{ height: 52, width: "auto" }} />
             </Box>
-            <Typography variant="body2" sx={{ opacity: 0.8, mb: 2.5, maxWidth: 340 }}>
+            <Typography variant="body2" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.65, opacity: 0.8, mb: 2.5, maxWidth: 340 }}>
               International Journal of Applied AI &amp; Computing - a peer-reviewed, open-access
               journal for research in applied AI, data science and computing.
             </Typography>

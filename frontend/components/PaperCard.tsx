@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import Link from "next/link";
 import AuthorNames from "@/components/AuthorNames";
 import KeywordChips from "@/components/KeywordChips";
+import { JUSTIFIED_SX, bioText } from "@/lib/text";
 
 export const clampLines = (lines: number) =>
   ({
@@ -85,9 +86,10 @@ export default function PaperCard({
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ ...clampLines(3), lineHeight: 1.5, minHeight: grid ? "4.5em" : undefined }}
+          lang="en"
+          sx={{ ...clampLines(3), ...JUSTIFIED_SX, lineHeight: 1.55, minHeight: grid ? "4.65em" : undefined }}
         >
-          {paper.abstract}
+          {bioText(paper.abstract)}
         </Typography>
       )}
 

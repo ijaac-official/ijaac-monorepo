@@ -13,6 +13,9 @@ import MuiLink from "@mui/material/Link";
 import Link from "next/link";
 import ReviewerApplicationForm from "@/components/reviewers/ReviewerApplicationForm";
 import { ReviewerBenefits, ReviewerSteps } from "@/components/reviewers/ReviewerBenefits";
+import { JUSTIFIED_SX } from "@/lib/text";
+
+const LIST_SX = { pl: 3, pr: { xs: 0.5, md: 1.5 }, m: 0, "& li": { ...JUSTIFIED_SX, mb: 1, lineHeight: 1.75 } } as const;
 
 export const metadata = pageMetadata({
   title: "Become a Reviewer",
@@ -50,7 +53,7 @@ export default function BecomeAReviewerPage() {
               <Typography variant="h5" component="h2" gutterBottom>
                 Who we are looking for
               </Typography>
-              <Box component="ul" sx={{ pl: 3, m: 0, "& li": { mb: 1, lineHeight: 1.7 } }}>
+              <Box component="ul" lang="en" sx={LIST_SX}>
                 {[
                   "Researchers, faculty members and experienced practitioners in AI, machine learning, data science or computing.",
                   "A postgraduate degree or a record of peer-reviewed publications or substantial industry work in your area.",
@@ -67,7 +70,7 @@ export default function BecomeAReviewerPage() {
               <Typography variant="h5" component="h2" gutterBottom>
                 What reviewing involves
               </Typography>
-              <Box component="ul" sx={{ pl: 3, m: 0, "& li": { mb: 1, lineHeight: 1.7 } }}>
+              <Box component="ul" lang="en" sx={LIST_SX}>
                 {[
                   "Reviews are double-blind: you will not know the authors, and they will not know you.",
                   "You assess originality, technical soundness, clarity and relevance, and recommend accept, revise or reject with constructive comments.",
@@ -79,7 +82,7 @@ export default function BecomeAReviewerPage() {
                   </Typography>
                 ))}
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ ...JUSTIFIED_SX, mt: 1.5 }}>
                 See our{" "}
                 <MuiLink component={Link} href="/publication-ethics">
                   publication ethics policy
@@ -107,11 +110,11 @@ export default function BecomeAReviewerPage() {
                 <Paper variant="outlined" sx={{ p: 2.5, bgcolor: "background.default" }}>
                   <Stack direction="row" spacing={1.5} alignItems="flex-start">
                     <VerifiedIcon color="primary" />
-                    <Box>
+                    <Box sx={{ minWidth: 0 }}>
                       <Typography variant="subtitle2" fontWeight={700}>
                         Your privacy matters
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.65 }}>
                         Your email and mobile number are only used by the editorial office. Peer review is
                         confidential - your profile only ever shows how many reviews you have completed.
                       </Typography>

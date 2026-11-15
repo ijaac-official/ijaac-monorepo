@@ -8,6 +8,7 @@ import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import BoltIcon from "@mui/icons-material/Bolt";
 import MotionCard from "@/components/MotionCard";
+import { JUSTIFIED_SX } from "@/lib/text";
 
 const BENEFITS = [
   {
@@ -60,7 +61,7 @@ export function ReviewerBenefits() {
               <Typography variant="h6" gutterBottom>
                 {b.title}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.65 }}>
                 {b.text}
               </Typography>
             </Paper>
@@ -95,11 +96,11 @@ export function ReviewerSteps() {
               <Box sx={{ position: "absolute", left: 17, top: 36, bottom: -24, width: 2, bgcolor: "divider" }} />
             )}
           </Box>
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography variant="subtitle1" fontWeight={700}>
               {s.title}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.65 }}>
               {s.text}
             </Typography>
           </Box>

@@ -42,7 +42,14 @@ export default function ReviewerStatTile({
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Typography
-          sx={{ fontSize: { xs: 32, md: 40 }, fontWeight: 700, lineHeight: 1, fontFamily: "var(--font-heading)" }}
+          sx={{
+            // Long text values (e.g. a role name) get a smaller size and wrap instead of overflowing.
+            fontSize: String(value).length > 8 ? { xs: 20, md: 22 } : { xs: 32, md: 40 },
+            fontWeight: 700,
+            lineHeight: String(value).length > 8 ? 1.2 : 1,
+            fontFamily: "var(--font-heading)",
+            overflowWrap: "anywhere",
+          }}
         >
           {value}
         </Typography>

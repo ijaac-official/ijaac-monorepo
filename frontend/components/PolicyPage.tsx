@@ -1,6 +1,7 @@
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import PageHero from "@/components/PageHero";
+import ProseText from "@/components/ProseText";
 
 export interface PolicySection {
   heading: string;
@@ -28,11 +29,7 @@ export default function PolicyPage({
             <Typography variant="h6" component="h2" fontWeight={600} gutterBottom sx={{ mt: 4 }}>
               {section.heading}
             </Typography>
-            {section.body.map((para, i) => (
-              <Typography key={i} variant="body1" color="text.secondary" paragraph>
-                {para}
-              </Typography>
-            ))}
+            <ProseText text={section.body} color="text.secondary" sx={{ mb: 2 }} />
           </div>
         ))}
       </Container>

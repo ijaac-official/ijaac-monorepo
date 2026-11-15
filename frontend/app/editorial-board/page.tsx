@@ -55,6 +55,8 @@ async function EditorialBoardContent() {
                       photoUrl={m.photoUrl}
                       bio={m.bio}
                       linkedinUrl={m.linkedinUrl}
+                      href={`/editorial-board/${encodeURIComponent(m.id)}`}
+                      linkLabel="See Detailed Profile"
                     />
                   </MotionCard>
                 </Grid>

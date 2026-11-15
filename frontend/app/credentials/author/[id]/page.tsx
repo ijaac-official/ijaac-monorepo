@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { JUSTIFIED_SX } from "@/lib/text";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
@@ -79,7 +80,7 @@ export default async function AuthorCredentialPage({ params }: { params: { id: s
           mb: 3,
         }}
       >
-        <Typography variant="body1" sx={{ lineHeight: 1.75 }}>
+        <Typography variant="body1" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.7 }}>
           IJAAC certifies that <b>{author.name}</b>
           {author.affiliation ? ` (${author.affiliation})` : ""} has published the paper{" "}
           <Box component="span" sx={{ fontStyle: "italic", fontWeight: 600 }}>

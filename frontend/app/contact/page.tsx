@@ -16,6 +16,8 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import PageHero from "@/components/PageHero";
 import ContactForm from "@/components/ContactForm";
 
+import { JUSTIFIED_SX } from "@/lib/text";
+
 export const metadata = pageMetadata({
   title: "Contact the Editorial Office",
   description:
@@ -110,7 +112,7 @@ export default function ContactPage() {
                       <Typography variant="body2" fontWeight={600}>
                         {faq.q}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.65 }}>
                         {faq.a}
                       </Typography>
                     </Stack>
@@ -122,7 +124,7 @@ export default function ContactPage() {
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                   Ready to Submit?
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, mb: 1.5 }}>
+                <Typography variant="body2" sx={{ ...JUSTIFIED_SX, opacity: 0.9, mb: 1.5 }}>
                   Review our author guidelines and submit your manuscript today.
                 </Typography>
                 <Link href="/submit-paper" style={{ color: "inherit" }}>

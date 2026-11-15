@@ -9,6 +9,7 @@ import { getSettingsSafe } from "@ijaac/data-store";
 import { pageMetadata } from "@/lib/seo";
 import PageHero from "@/components/PageHero";
 import BookPublishForm from "@/components/BookPublishForm";
+import { JUSTIFIED_SX } from "@/lib/text";
 
 export const metadata = pageMetadata({
   title: "Publish Your Book Internationally",
@@ -61,7 +62,12 @@ export default async function PublishBookPage() {
                   {STEPS.map((step) => (
                     <Stack key={step} direction="row" spacing={1} alignItems="flex-start">
                       <CheckCircleOutlineIcon fontSize="small" color="primary" sx={{ mt: 0.2, flexShrink: 0 }} />
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        lang="en"
+                        sx={{ ...JUSTIFIED_SX, lineHeight: 1.65, minWidth: 0 }}
+                      >
                         {step}
                       </Typography>
                     </Stack>

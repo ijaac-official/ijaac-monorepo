@@ -24,6 +24,9 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: ["var(--font-body)", "Inter", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
+    // Body text uses the typeface's designed letter spacing (MUI adds a small default tracking).
+    body1: { letterSpacing: "normal", lineHeight: 1.65 },
+    body2: { letterSpacing: "normal", lineHeight: 1.6 },
     h1: { fontWeight: 700, fontFamily: "var(--font-heading)" },
     h2: { fontWeight: 700, fontFamily: "var(--font-heading)" },
     h3: { fontWeight: 700, fontFamily: "var(--font-heading)" },

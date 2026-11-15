@@ -32,6 +32,8 @@ import PaperCard from "@/components/PaperCard";
 import StatsCounters, { type StatItem } from "@/components/StatsCounters";
 import IssueCover from "@/components/IssueCover";
 import JsonLd from "@/components/JsonLd";
+import ProseText from "@/components/ProseText";
+import { JUSTIFIED_SX } from "@/lib/text";
 import { SCOPE_AREAS } from "@/lib/journal-content";
 import {
   DEFAULT_OG_IMAGE,
@@ -170,11 +172,23 @@ async function HomeData() {
                 <Typography variant="h4" component="h2" fontWeight={700} sx={{ mb: 1 }}>
                   {issueLabel(currentIssue)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: currentIssue.description ? 1.5 : 3 }}
+                >
                   Volume {currentIssue.volume}, Issue {currentIssue.number}
                   {currentIssue.year ? ` - ${currentIssue.year}` : ""}
-                  {currentIssue.description ? ` - ${currentIssue.description}` : ""}
                 </Typography>
+                {currentIssue.description && (
+                  <ProseText
+                    text={currentIssue.description}
+                    variant="body2"
+                    color="text.secondary"
+                    dense
+                    sx={{ mb: 3 }}
+                  />
+                )}
                 {currentIssuePapers.length > 0 ? (
                   <Grid container spacing={2}>
                     {currentIssuePapers.map((paper, i) => (
@@ -318,7 +332,12 @@ export default function HomePage() {
                     <Typography variant="h6" component="h2" gutterBottom>
                       {item.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      lang="en"
+                      sx={{ ...JUSTIFIED_SX, lineHeight: 1.65 }}
+                    >
                       {item.body}
                     </Typography>
                   </Paper>
@@ -373,17 +392,14 @@ export default function HomePage() {
             <Typography variant="h4" component="h2" fontWeight={700} gutterBottom sx={{ mt: 1 }}>
               Bridging Research and Real-World Application
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              The International Journal of Applied AI &amp; Computing is a peer-reviewed,
-              open-access journal for research that applies artificial intelligence, machine
-              learning, data science and computing to real problems - from healthcare and
-              agriculture to finance, education and industry.
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              We publish original research articles, reviews, short communications and case studies.
-              Edited in India and open to authors worldwide, IJAAC publishes a new issue every month,
-              with Volume 1 in 2026.
-            </Typography>
+            <ProseText
+              color="text.secondary"
+              sx={{ mb: 3 }}
+              text={[
+                "The International Journal of Applied AI & Computing is a peer-reviewed, open-access journal for research that applies artificial intelligence, machine learning, data science and computing to real problems - from healthcare and agriculture to finance, education and industry.",
+                "We publish original research articles, reviews, short communications and case studies. Edited in India and open to authors worldwide, IJAAC publishes a new issue every month, with Volume 1 in 2026.",
+              ]}
+            />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <Button component={Link} href="/about" variant="contained">
                 Aims &amp; Scope

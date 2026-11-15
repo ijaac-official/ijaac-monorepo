@@ -10,6 +10,7 @@ import PageHero from "@/components/PageHero";
 import JsonLd from "@/components/JsonLd";
 import { breadcrumbJsonLd, faqJsonLd, pageMetadata } from "@/lib/seo";
 import { FAQS } from "@/lib/journal-content";
+import { JUSTIFIED_SX } from "@/lib/text";
 
 export const metadata = pageMetadata({
   title: "Frequently Asked Questions",
@@ -70,8 +71,8 @@ export default function FaqPage() {
                   {faq.q}
                 </Typography>
               </Box>
-              <Box sx={{ px: { xs: 2, md: 2.5 }, pb: 2.5 }}>
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.75 }}>
+              <Box lang="en" sx={{ px: { xs: 2.5, md: 3.5 }, pb: 2.5, minWidth: 0 }}>
+                <Typography variant="body1" color="text.secondary" sx={{ ...JUSTIFIED_SX, lineHeight: 1.7 }}>
                   {faq.a}
                 </Typography>
                 {faq.link && (
@@ -88,7 +89,7 @@ export default function FaqPage() {
           <Typography variant="h6" component="h2" gutterBottom>
             Still have a question?
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.7, mb: 2 }}>
             Email the editorial office at ijaac.official@gmail.com or send us a message. Include
             your submission ID if your question is about a manuscript you have already submitted.
           </Typography>

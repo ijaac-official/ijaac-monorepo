@@ -1,4 +1,5 @@
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { JUSTIFIED_SX } from "@/lib/text";
 import JsonLd from "@/components/JsonLd";
 import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
@@ -42,11 +43,11 @@ function BecomeReviewerCta() {
         alignItems={{ xs: "flex-start", md: "center" }}
         justifyContent="space-between"
       >
-        <Box>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h5" gutterBottom>
             Share your expertise - become a reviewer
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680 }}>
+          <Typography variant="body1" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, maxWidth: 680, lineHeight: 1.75 }}>
             Earn a certificate for every review, get a verified public reviewer profile and early access to new
             research in applied AI and computing.
           </Typography>

@@ -12,6 +12,8 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
 import { formatInr } from "@ijaac/shared";
 import { getSettingsSafe } from "@ijaac/data-store";
+import ProseText from "@/components/ProseText";
+import { JUSTIFIED_SX } from "@/lib/text";
 
 const POINTS = [
   {
@@ -50,12 +52,11 @@ export default async function PublishBookSection() {
             <Typography variant="h4" component="h2" fontWeight={700} gutterBottom sx={{ overflowWrap: "anywhere" }}>
               Publish Your Book with IJAAC
             </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              IJAAC supports authors in publishing their books internationally, with editorial guidance and
-              formatting and preparation for international publication. Send a book publication request online -
-              no manuscript upload is needed. Our editorial office will contact you by email to collect your
-              manuscript and discuss the publication.
-            </Typography>
+            <ProseText
+              color="text.secondary"
+              sx={{ mb: 3 }}
+              text="IJAAC supports authors in publishing their books internationally, with editorial guidance and formatting and preparation for international publication. Send a book publication request online - no manuscript upload is needed. Our editorial office will contact you by email to collect your manuscript and discuss the publication."
+            />
             <Paper variant="outlined" sx={{ p: 2.5, mb: 3, borderColor: "primary.main", borderWidth: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Book publication fee
@@ -80,7 +81,7 @@ export default async function PublishBookSection() {
                       <Icon color="primary" sx={{ mt: 0.25, flexShrink: 0 }} />
                       <Box sx={{ minWidth: 0 }}>
                         <Typography fontWeight={600}>{title}</Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" lang="en" sx={{ ...JUSTIFIED_SX, lineHeight: 1.65 }}>
                           {text}
                         </Typography>
                       </Box>

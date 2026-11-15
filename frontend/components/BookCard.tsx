@@ -8,6 +8,7 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { JUSTIFIED_SX, bioText } from "@/lib/text";
 
 const clamp = (lines: number) =>
   ({
@@ -56,8 +57,13 @@ export default function BookCard({ book }: { book: Book }) {
         <Typography variant="body2" color="primary.main" fontWeight={600} title={authors} noWrap>
           {authors}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ ...clamp(3), lineHeight: 1.5 }}>
-          {book.description}
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          lang="en"
+          sx={{ ...clamp(3), ...JUSTIFIED_SX, lineHeight: 1.55 }}
+        >
+          {bioText(book.description)}
         </Typography>
         <Stack
           direction="row"

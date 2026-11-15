@@ -3,6 +3,7 @@ import CardContent from "@mui/material/CardContent";
 import Avatar from "@mui/material/Avatar";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
+import { JUSTIFIED_SX, bioText } from "@/lib/text";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
@@ -29,6 +30,7 @@ export default function PersonCard({
   linkedinUrl,
   href,
   stat,
+  linkLabel = "View profile",
 }: {
   name: string;
   designation?: string;
@@ -42,6 +44,8 @@ export default function PersonCard({
   href?: string;
   /** Optional small highlighted stat, e.g. "12 reviews" */
   stat?: string;
+  /** Text of the profile link shown when `href` is set (default "View profile") */
+  linkLabel?: string;
 }) {
   const place = [affiliation, country].filter(Boolean).join(", ");
   const shownTags = (tags ?? []).slice(0, 4);
@@ -124,8 +128,12 @@ export default function PersonCard({
         )}
 
         {bio && (
-          <Typography variant="body2" sx={{ ...clamp(4), lineHeight: 1.55 }}>
-            {bio}
+          <Typography
+            variant="body2"
+            lang="en"
+            sx={{ ...clamp(4), ...JUSTIFIED_SX, lineHeight: 1.55 }}
+          >
+            {bioText(bio)}
           </Typography>
         )}
 
@@ -185,7 +193,7 @@ export default function PersonCard({
                     aria-hidden
                     sx={{ color: "primary.main", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}
                   >
-                    View profile <ArrowForwardIcon sx={{ fontSize: 14 }} />
+                    {linkLabel} <ArrowForwardIcon sx={{ fontSize: 14 }} />
                   </Typography>
                 )}
               </Box>

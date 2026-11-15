@@ -10,6 +10,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import JsonLd from "@/components/JsonLd";
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { JUSTIFIED_SX, PROSE_SX } from "@/lib/text";
 import { ARTICLE_TYPES, PUBLICATION_FEE_INR } from "@/lib/journal-content";
 
 export const metadata = pageMetadata({
@@ -48,7 +49,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <Typography variant="body1" paragraph sx={{ lineHeight: 1.75 }}>
+    <Typography variant="body1" paragraph>
       {children}
     </Typography>
   );
@@ -56,7 +57,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Bullets({ items }: { items: React.ReactNode[] }) {
   return (
-    <Box component="ul" sx={{ pl: 3, mt: 0, mb: 2, "& li": { mb: 0.75, lineHeight: 1.7 } }}>
+    <Box component="ul" sx={{ pl: 3, mt: 0, mb: 2, "& li": { ...JUSTIFIED_SX, mb: 0.75, lineHeight: 1.75 } }}>
       {items.map((item, i) => (
         <Typography component="li" variant="body1" key={i}>
           {item}
@@ -93,6 +94,7 @@ export default function AuthorGuidelinesPage() {
           </Grid>
 
           <Grid item xs={12} md={9} sx={{ minWidth: 0 }}>
+            <Box lang="en" sx={PROSE_SX}>
             <Section id="before-you-submit" title="Before you submit">
               <P>Please check that your manuscript meets these requirements. Submissions that do not may be returned without review.</P>
               <Bullets
@@ -296,6 +298,7 @@ export default function AuthorGuidelinesPage() {
                 .
               </P>
             </Section>
+            </Box>
 
             <Paper
               variant="outlined"
@@ -304,7 +307,7 @@ export default function AuthorGuidelinesPage() {
               <Typography variant="h6" component="h2" gutterBottom>
                 Ready to submit?
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ ...JUSTIFIED_SX, mb: 2 }}>
                 Questions not answered here? See the FAQ or email ijaac.official@gmail.com.
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>

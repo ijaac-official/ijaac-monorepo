@@ -10,6 +10,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import JsonLd from "@/components/JsonLd";
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { PROSE_SX, JUSTIFIED_SX } from "@/lib/text";
 import { ARTICLE_TYPES, PUBLICATION_FEE_INR, REVIEW_STEPS, SCOPE_AREAS } from "@/lib/journal-content";
 
 export const metadata = pageMetadata({
@@ -59,7 +60,8 @@ export default function AboutPage() {
       />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Grid container spacing={{ xs: 4, md: 6 }}>
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={8} sx={{ minWidth: 0 }}>
+            <Box lang="en" sx={PROSE_SX}>
             <SectionTitle id="mission">Our mission</SectionTitle>
             <Typography variant="body1" paragraph>
               The International Journal of Applied AI &amp; Computing (IJAAC) is a peer-reviewed,
@@ -81,23 +83,32 @@ export default function AboutPage() {
               Theoretical contributions are welcome when they are tied to a practical question.
               Typical subject areas include:
             </Typography>
-            <Grid container spacing={2} sx={{ mb: 2 }}>
+            {/* Full-width rows (topic | description) so each justified line holds enough words for even spacing. */}
+            <Stack spacing={1.5} sx={{ mb: 2 }}>
               {SCOPE_AREAS.map((area) => (
-                <Grid item xs={12} sm={6} key={area.title}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ p: 2, height: "100%", borderLeft: "3px solid", borderLeftColor: "secondary.main" }}
-                  >
-                    <Typography variant="subtitle2" component="h3" fontWeight={700} gutterBottom>
-                      {area.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {area.description}
-                    </Typography>
-                  </Paper>
-                </Grid>
+                <Paper
+                  key={area.title}
+                  variant="outlined"
+                  sx={{
+                    p: { xs: 2, sm: 2.25 },
+                    borderLeft: "3px solid",
+                    borderLeftColor: "secondary.main",
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "200px minmax(0, 1fr)" },
+                    columnGap: 2.5,
+                    rowGap: 0.75,
+                    alignItems: "baseline",
+                  }}
+                >
+                  <Typography variant="subtitle2" component="h3" fontWeight={700}>
+                    {area.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ ...JUSTIFIED_SX, maxWidth: "none" }}>
+                    {area.description}
+                  </Typography>
+                </Paper>
               ))}
-            </Grid>
+            </Stack>
             <Typography variant="body2" color="text.secondary" paragraph>
               Not sure whether your topic fits? Email the editorial office with your title and
               abstract before submitting and we will let you know.
@@ -149,7 +160,7 @@ export default function AboutPage() {
                   >
                     {i + 1}
                   </Box>
-                  <Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <Typography variant="subtitle1" component="h3" fontWeight={700}>
                       {step.title}
                     </Typography>
@@ -217,6 +228,7 @@ export default function AboutPage() {
                 Frequently asked questions
               </Button>
             </Stack>
+            </Box>
           </Grid>
 
           <Grid item xs={12} md={4}>

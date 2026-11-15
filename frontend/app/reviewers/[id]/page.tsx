@@ -24,6 +24,7 @@ import type { Reviewer } from "@ijaac/shared";
 import { getReviewer, listAllSubmissionsRaw } from "@ijaac/data-store";
 import ReviewerStatTile from "@/components/reviewers/ReviewerStatTile";
 import JsonLd from "@/components/JsonLd";
+import { JUSTIFIED_SX, bioParagraphs, bioText } from "@/lib/text";
 import { ORGANIZATION_ID, absoluteUrl, breadcrumbJsonLd, clip, pageMetadata } from "@/lib/seo";
 import { cache } from "react";
 
@@ -98,7 +99,7 @@ export default async function ReviewerProfilePage({ params }: { params: { id: st
     }
   }
   const since = new Date(reviewer.approvedAt ?? reviewer.createdAt).getFullYear();
-  const location = [reviewer.affiliation, reviewer.country].filter(Boolean).join(", ");
+  const location = bioText([reviewer.affiliation, reviewer.country].filter(Boolean).join(", "));
 
   return (
     <>
@@ -194,16 +195,31 @@ export default async function ReviewerProfilePage({ params }: { params: { id: st
 
         <Grid container spacing={4}>
           <Grid item xs={12} md={8}>
-            <Paper variant="outlined" sx={{ p: { xs: 3, md: 4 }, mb: 3 }}>
+            <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3, md: 4 }, mb: 3 }}>
               <Typography variant="h5" gutterBottom>
                 About
               </Typography>
-              <Typography variant="body1" color={reviewer.bio ? "text.primary" : "text.secondary"} sx={{ whiteSpace: "pre-wrap" }}>
-                {reviewer.bio || `${reviewer.name} is a member of the IJAAC reviewer panel.`}
-              </Typography>
+              {(() => {
+                const paragraphs = bioParagraphs(reviewer.bio);
+                const text = paragraphs.length ? paragraphs : [`${reviewer.name} is a member of the IJAAC reviewer panel.`];
+                return (
+                  <Box lang="en" sx={{ px: { xs: 0, md: 1.5 }, py: 0.5 }}>
+                    {text.map((para, i) => (
+                      <Typography
+                        key={i}
+                        variant="body1"
+                        color={paragraphs.length ? "text.primary" : "text.secondary"}
+                        sx={{ ...JUSTIFIED_SX, lineHeight: 1.7, mb: i < text.length - 1 ? 2 : 0 }}
+                      >
+                        {para}
+                      </Typography>
+                    ))}
+                  </Box>
+                );
+              })()}
             </Paper>
             {reviewer.areasOfInterest.length > 0 && (
-              <Paper variant="outlined" sx={{ p: { xs: 3, md: 4 } }}>
+              <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
                 <Typography variant="h5" gutterBottom>
                   Areas of expertise
                 </Typography>
@@ -269,7 +285,7 @@ export default async function ReviewerProfilePage({ params }: { params: { id: st
             <Paper variant="outlined" sx={{ p: 3, mb: 3, bgcolor: "background.default" }}>
               <Stack direction="row" spacing={1.5} alignItems="flex-start">
                 <LockOutlinedIcon color="primary" fontSize="small" sx={{ mt: 0.25 }} />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={JUSTIFIED_SX}>
                   IJAAC follows confidential peer review. Reviewer profiles show the number of completed reviews,
                   never which manuscripts were reviewed.
                 </Typography>
@@ -282,7 +298,7 @@ export default async function ReviewerProfilePage({ params }: { params: { id: st
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>
                 Want a profile like this?
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ ...JUSTIFIED_SX, mb: 2 }}>
                 Join the IJAAC reviewer panel and get recognised for every review.
               </Typography>
               <Button component={Link} href="/become-a-reviewer" variant="contained" fullWidth>

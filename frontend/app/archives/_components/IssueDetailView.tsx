@@ -11,6 +11,7 @@ import Paper from "@mui/material/Paper";
 import Divider from "@mui/material/Divider";
 import Button from "@mui/material/Button";
 import IssueCover from "@/components/IssueCover";
+import ProseText from "@/components/ProseText";
 
 // Kept local (not imported from IssueCover): IssueCover is a client module, and
 // plain functions exported from a client module cannot be called on the server.
@@ -52,7 +53,7 @@ export default function IssueDetailView({
             <IssueCover issue={issue} size="lg" />
           </Box>
         </Grid>
-        <Grid item xs={12} sm={7} md={8}>
+        <Grid item xs={12} sm={7} md={8} sx={{ minWidth: 0 }}>
           <Typography variant="overline" color="secondary.dark">
             {issueVolumeLabel(issue)}
           </Typography>
@@ -70,9 +71,7 @@ export default function IssueDetailView({
             </Typography>
           )}
           {issue.description && (
-            <Typography variant="body1" sx={{ mt: 2, whiteSpace: "pre-line" }}>
-              {issue.description}
-            </Typography>
+            <ProseText text={issue.description} sx={{ mt: 2 }} />
           )}
           {showArchiveLink && (
             <Button component={Link} href="/archives" variant="outlined" sx={{ mt: 3 }}>
