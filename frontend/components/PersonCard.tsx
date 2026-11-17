@@ -31,6 +31,8 @@ export default function PersonCard({
   href,
   stat,
   linkLabel = "View profile",
+  details,
+  lines,
 }: {
   name: string;
   designation?: string;
@@ -46,8 +48,24 @@ export default function PersonCard({
   stat?: string;
   /** Text of the profile link shown when `href` is set (default "View profile") */
   linkLabel?: string;
+  /**
+   * Labelled detail rows (e.g. Department, Affiliation, Qualification). When
+   * given, they replace the plain affiliation/country line. Empty values are skipped.
+   */
+  details?: { label: string; value?: string }[];
+  /**
+   * Plain profile lines shown under the name block, e.g. position,
+   * qualification, specialization. Empty lines are skipped.
+   */
+  lines?: (string | undefined)[];
 }) {
-  const place = [affiliation, country].filter(Boolean).join(", ");
+  const displayName = bioText(name) || name;
+  const subtitle = bioText(designation);
+  const place = bioText([affiliation, country].filter(Boolean).join(", "));
+  const detailRows = (details ?? [])
+    .map((d) => ({ label: d.label, value: bioText(d.value) }))
+    .filter((d) => d.value);
+  const profileLines = (lines ?? []).map((l) => bioText(l)).filter(Boolean);
   const shownTags = (tags ?? []).slice(0, 4);
   const extraTags = (tags?.length ?? 0) - shownTags.length;
 
@@ -79,7 +97,7 @@ export default function PersonCard({
               component="h3"
               className="person-card-name"
               fontWeight={600}
-              title={name}
+              title={displayName}
               sx={{ ...clamp(2), lineHeight: 1.3, transition: "color 0.15s ease" }}
             >
               {href ? (
@@ -95,15 +113,15 @@ export default function PersonCard({
                     "&::after": { content: '""', position: "absolute", inset: 0, zIndex: 1 },
                   }}
                 >
-                  {name}
+                  {displayName}
                 </Box>
               ) : (
-                name
+                displayName
               )}
             </Typography>
-            {designation && (
+            {subtitle && (
               <Typography variant="body2" color="text.secondary" sx={{ ...clamp(2), lineHeight: 1.4 }}>
-                {designation}
+                {subtitle}
               </Typography>
             )}
           </Box>
@@ -121,10 +139,46 @@ export default function PersonCard({
           )}
         </Box>
 
-        {place && (
-          <Typography variant="body2" color="text.secondary" title={place} sx={clamp(2)}>
-            {place}
-          </Typography>
+        {lines ? (
+          profileLines.length > 0 && (
+            <Box sx={{ display: "grid", gap: 0.5, mt: 0.5 }}>
+              {profileLines.map((l, i) => (
+                <Typography
+                  key={i}
+                  variant="body2"
+                  title={l}
+                  sx={{ fontWeight: 600, color: "text.primary", lineHeight: 1.45, ...clamp(2) }}
+                >
+                  {l}
+                </Typography>
+              ))}
+            </Box>
+          )
+        ) : details ? (
+          detailRows.length > 0 && (
+            <Box component="dl" sx={{ m: 0, display: "grid", gap: 0.75 }}>
+              {detailRows.map((d) => (
+                <Box key={d.label} sx={{ minWidth: 0 }}>
+                  <Typography
+                    component="dt"
+                    variant="caption"
+                    sx={{ color: "primary.main", fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", fontSize: 10.5 }}
+                  >
+                    {d.label}
+                  </Typography>
+                  <Typography component="dd" variant="body2" title={d.value} sx={{ m: 0, ...clamp(2), lineHeight: 1.45 }}>
+                    {d.value}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )
+        ) : (
+          place && (
+            <Typography variant="body2" color="text.secondary" title={place} sx={clamp(2)}>
+              {place}
+            </Typography>
+          )
         )}
 
         {bio && (

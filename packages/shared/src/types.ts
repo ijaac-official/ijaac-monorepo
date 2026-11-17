@@ -204,7 +204,17 @@ export interface EditorialBoardMember {
   id: string;
   name: string;
   designation?: string;
+  /** Department, e.g. "Department of Computer Science and Engineering" */
+  department?: string;
   affiliation?: string;
+  /** Highest qualification, e.g. "Doctor of Engineering (Ph.D.)" */
+  qualification?: string;
+  /** University that awarded the qualification, e.g. "Lamar University, USA" */
+  qualificationInstitution?: string;
+  /** Area of specialization, e.g. "Brain-Computer Interface" */
+  specialization?: string;
+  /** Full postal address (required for new and edited entries) */
+  address?: string;
   country?: string;
   photoUrl: string;
   bio?: string;

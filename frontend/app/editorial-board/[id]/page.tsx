@@ -86,7 +86,20 @@ function personJsonLd(m: EditorialBoardMember, role: string) {
     url,
     ...(hasRealPhoto(m.photoUrl) ? { image: m.photoUrl } : {}),
     jobTitle: m.designation || role,
-    ...(m.affiliation ? { affiliation: { "@type": "Organization", name: m.affiliation } } : {}),
+    ...(m.affiliation
+      ? { affiliation: { "@type": "Organization", name: [m.department, m.affiliation].filter(Boolean).join(", ") } }
+      : {}),
+    ...(m.qualification
+      ? {
+          hasCredential: {
+            "@type": "EducationalOccupationalCredential",
+            name: m.qualification,
+            ...(m.qualificationInstitution ? { recognizedBy: { "@type": "CollegeOrUniversity", name: m.qualificationInstitution } } : {}),
+          },
+        }
+      : {}),
+    ...(m.specialization ? { knowsAbout: [m.specialization] } : {}),
+    ...(m.address ? { workLocation: { "@type": "Place", address: m.address } } : {}),
     ...(m.bio ? { description: clip(m.bio, 300) } : {}),
     ...(m.linkedinUrl ? { sameAs: [m.linkedinUrl] } : {}),
     memberOf: { "@id": ORGANIZATION_ID },
@@ -151,7 +164,7 @@ export default async function EditorProfilePage({ params }: { params: { id: stri
                 sx={{ bgcolor: "secondary.main", color: "secondary.contrastText", mb: 1.5, maxWidth: "100%" }}
               />
               <Typography variant="h3" component="h1" sx={{ fontSize: { xs: 30, md: 42 }, overflowWrap: "anywhere" }}>
-                {member.name}
+                {bioText(member.name) || member.name}
               </Typography>
               {member.designation && (
                 <Typography variant="h6" sx={{ fontWeight: 400, opacity: 0.92 }}>
@@ -186,9 +199,55 @@ export default async function EditorProfilePage({ params }: { params: { id: stri
 
         <Grid container spacing={4}>
           <Grid item xs={12} md={8} sx={{ minWidth: 0 }}>
+            {(() => {
+              const rows = [
+                { label: "Name", value: member.name },
+                { label: "Designation", value: member.designation },
+                { label: "Department", value: member.department },
+                { label: "Affiliation", value: [member.affiliation, member.country].filter(Boolean).join(", ") },
+                { label: "Qualification", value: member.qualification },
+                { label: "Awarded by", value: member.qualificationInstitution },
+                { label: "Specialization", value: member.specialization },
+                { label: "Address", value: member.address },
+              ]
+                .map((r) => ({ ...r, value: bioText(r.value) }))
+                .filter((r) => r.value);
+              return (
+                <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3, md: 4 }, mb: 3 }}>
+                  <Typography variant="h5" component="h2" gutterBottom>
+                    Profile Details
+                  </Typography>
+                  <Box
+                    component="dl"
+                    sx={{
+                      m: 0,
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", sm: "160px minmax(0, 1fr)" },
+                      columnGap: 3,
+                      rowGap: { xs: 0.25, sm: 1.5 },
+                    }}
+                  >
+                    {rows.map((r) => (
+                      <Box key={r.label} sx={{ display: "contents" }}>
+                        <Typography
+                          component="dt"
+                          variant="body2"
+                          sx={{ color: "primary.main", fontWeight: 700, mt: { xs: 1.25, sm: 0 } }}
+                        >
+                          {r.label}
+                        </Typography>
+                        <Typography component="dd" variant="body1" sx={{ m: 0, overflowWrap: "anywhere", lineHeight: 1.6 }}>
+                          {r.value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Paper>
+              );
+            })()}
             <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography variant="h5" component="h2" gutterBottom>
-                About
+                Biography
               </Typography>
               {(() => {
                 const paragraphs = bioParagraphs(member.bio);

@@ -80,7 +80,12 @@ export const reviewerInputSchema = z.object({
 export const editorialBoardInputSchema = z.object({
   name: z.string().min(2),
   designation: z.string().optional(),
+  department: z.string().trim().optional(),
   affiliation: z.string().optional(),
+  qualification: z.string().trim().optional(),
+  qualificationInstitution: z.string().trim().optional(),
+  specialization: z.string().trim().optional(),
+  address: z.string().trim().min(10, "Full address is required"),
   country: z.string().optional(),
   photoUrl: z.string().url(),
   bio: z.string().optional(),

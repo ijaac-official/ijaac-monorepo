@@ -37,7 +37,12 @@ type FormState = {
   id?: string;
   name: string;
   designation: string;
+  department: string;
   affiliation: string;
+  qualification: string;
+  qualificationInstitution: string;
+  specialization: string;
+  address: string;
   country: string;
   photoUrl: string;
   bio: string;
@@ -51,7 +56,12 @@ type FormState = {
 const EMPTY: FormState = {
   name: "",
   designation: "",
+  department: "",
   affiliation: "",
+  qualification: "",
+  qualificationInstitution: "",
+  specialization: "",
+  address: "",
   country: "",
   photoUrl: "https://placehold.co/300x300?text=Board+Member",
   bio: "",
@@ -108,7 +118,12 @@ export default function EditorialBoardManager({
       id: m.id,
       name: m.name,
       designation: m.designation ?? "",
+      department: m.department ?? "",
       affiliation: m.affiliation ?? "",
+      qualification: m.qualification ?? "",
+      qualificationInstitution: m.qualificationInstitution ?? "",
+      specialization: m.specialization ?? "",
+      address: m.address ?? "",
       country: m.country ?? "",
       photoUrl: m.photoUrl,
       bio: m.bio ?? "",
@@ -121,17 +136,32 @@ export default function EditorialBoardManager({
     setOpen(true);
   };
 
+  const addressError = form.address.trim().length > 0 && form.address.trim().length < 10;
+
   const save = async () => {
+    if (!form.name.trim()) {
+      enqueueSnackbar("Name is required", { variant: "error" });
+      return;
+    }
+    if (form.address.trim().length < 10) {
+      enqueueSnackbar("Full address is required", { variant: "error" });
+      return;
+    }
     setSaving(true);
     const payload = {
-      name: form.name,
-      designation: form.designation || undefined,
-      affiliation: form.affiliation || undefined,
-      country: form.country || undefined,
+      name: form.name.trim(),
+      designation: form.designation.trim() || undefined,
+      department: form.department.trim() || undefined,
+      affiliation: form.affiliation.trim() || undefined,
+      qualification: form.qualification.trim() || undefined,
+      qualificationInstitution: form.qualificationInstitution.trim() || undefined,
+      specialization: form.specialization.trim() || undefined,
+      address: form.address.trim(),
+      country: form.country.trim() || undefined,
       photoUrl: form.photoUrl,
       bio: form.bio || undefined,
-      email: form.email || undefined,
-      linkedinUrl: form.linkedinUrl || undefined,
+      email: form.email.trim() || undefined,
+      linkedinUrl: form.linkedinUrl.trim() || undefined,
       role: form.role,
       displayOrder: Number(form.displayOrder) || 0,
       isActive: form.isActive,
@@ -142,9 +172,17 @@ export default function EditorialBoardManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const fieldErrors = body?.error?.fieldErrors as Record<string, string[]> | undefined;
+        const first = fieldErrors && Object.entries(fieldErrors)[0];
+        throw new Error(first ? `${first[0]}: ${first[1][0]}` : "Save failed");
+      }
+      enqueueSnackbar(form.id ? "Board member updated" : "Board member added", { variant: "success" });
       setOpen(false);
       router.refresh();
+    } catch (err) {
+      enqueueSnackbar(err instanceof Error ? err.message : "Save failed", { variant: "error" });
     } finally {
       setSaving(false);
     }
@@ -185,6 +223,9 @@ export default function EditorialBoardManager({
                   {m.name}
                   {reviewerSet.has(m.id) && (
                     <Chip label="Reviewer" size="small" color="success" variant="outlined" sx={{ ml: 1 }} />
+                  )}
+                  {!m.address && (
+                    <Chip label="Address needed" size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />
                   )}
                 </TableCell>
                 <TableCell>{m.role.replace(/_/g, " ")}</TableCell>
@@ -240,11 +281,44 @@ export default function EditorialBoardManager({
                 </MenuItem>
               ))}
             </TextField>
-            <Stack direction="row" spacing={2}>
-              <TextField label="Designation" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} fullWidth />
-              <TextField label="Affiliation" value={form.affiliation} onChange={(e) => setForm({ ...form, affiliation: e.target.value })} fullWidth />
+            <Typography variant="overline" color="text.secondary" sx={{ mb: -1 }}>
+              Current position
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField label="Designation" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="e.g. Professor & Head" fullWidth />
+              <TextField label="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="e.g. Department of Advanced Computing" fullWidth />
             </Stack>
-            <Stack direction="row" spacing={2}>
+            <TextField
+              label="Affiliation (Institution, City)"
+              value={form.affiliation}
+              onChange={(e) => setForm({ ...form, affiliation: e.target.value })}
+              placeholder="e.g. Sage University, Indore"
+              helperText="Shown under the name on the card"
+              fullWidth
+            />
+            <Typography variant="overline" color="text.secondary" sx={{ mb: -1 }}>
+              Qualification
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField label="Qualification" value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} placeholder="e.g. Doctor of Engineering (Ph.D.)" fullWidth />
+              <TextField label="Awarded by (University, Country)" value={form.qualificationInstitution} onChange={(e) => setForm({ ...form, qualificationInstitution: e.target.value })} placeholder="e.g. Lamar University, USA" fullWidth />
+            </Stack>
+            <TextField label="Specialization" value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} placeholder="e.g. Brain-Computer Interface" fullWidth />
+            <Typography variant="overline" color="text.secondary" sx={{ mb: -1 }}>
+              Contact
+            </Typography>
+            <TextField
+              label="Address"
+              required
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              error={addressError}
+              helperText={addressError ? "Enter the full address" : "Full postal address with city, state and PIN code"}
+              multiline
+              minRows={2}
+              fullWidth
+            />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField label="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} fullWidth />
               <TextField label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} fullWidth />
             </Stack>
@@ -262,7 +336,7 @@ export default function EditorialBoardManager({
               folder="editorial-board"
               variant="circle"
             />
-            <TextField label="Bio" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} multiline rows={3} fullWidth />
+            <TextField label="Bio (shown in full on the detailed profile)" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} multiline minRows={4} fullWidth />
             <TextField label="Display Order" value={form.displayOrder} onChange={(e) => setForm({ ...form, displayOrder: e.target.value })} fullWidth />
             <FormControlLabel
               control={<Switch checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />}
@@ -272,7 +346,7 @@ export default function EditorialBoardManager({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={save} disabled={saving}>
+          <Button variant="contained" onClick={save} disabled={saving || !form.name.trim() || form.address.trim().length < 10}>
             Save
           </Button>
         </DialogActions>

@@ -26,6 +26,12 @@ const ROLE_LABELS: Record<string, string> = {
   ADVISORY_BOARD: "Advisory Board",
 };
 
+/** "Professor & Head, Department of Advanced Computing, Sage University, Indore" */
+function positionLine(m: EditorialBoardMember): string | undefined {
+  const parts = [m.designation, m.department, m.affiliation].map((p) => p?.trim()).filter(Boolean) as string[];
+  return parts.length ? parts.join(", ") : undefined;
+}
+
 async function EditorialBoardContent() {
   const members = await listEditorialBoard({ activeOnly: true }).catch(() => []);
   const grouped = members.reduce<Record<string, EditorialBoardMember[]>>((acc, m) => {
@@ -49,12 +55,15 @@ async function EditorialBoardContent() {
                   <MotionCard delay={(i % 3) * 0.08}>
                     <PersonCard
                       name={m.name}
-                      designation={m.designation}
-                      affiliation={m.affiliation}
-                      country={m.country}
+                      designation={m.affiliation}
                       photoUrl={m.photoUrl}
-                      bio={m.bio}
                       linkedinUrl={m.linkedinUrl}
+                      lines={[
+                        positionLine(m),
+                        m.qualification,
+                        m.specialization ? `Specialization: ${m.specialization}` : undefined,
+                        m.qualificationInstitution,
+                      ]}
                       href={`/editorial-board/${encodeURIComponent(m.id)}`}
                       linkLabel="See Detailed Profile"
                     />
