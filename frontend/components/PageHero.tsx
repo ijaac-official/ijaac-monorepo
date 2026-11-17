@@ -1,6 +1,7 @@
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
+import Image from "next/image";
 import AutoStoriesOutlinedIcon from "@mui/icons-material/AutoStoriesOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
@@ -44,10 +45,15 @@ export default function PageHero({
   title,
   subtitle,
   icon = "publications",
+  image,
+  imageAlt = "",
 }: {
   title: string;
   subtitle?: string;
   icon?: PageHeroIcon;
+  /** Optional relevant photo, shown under a brand-colour overlay. */
+  image?: string;
+  imageAlt?: string;
 }) {
   const Icon = ICONS[icon];
   return (
@@ -60,6 +66,20 @@ export default function PageHero({
         background: "linear-gradient(120deg, #4a1017 0%, #7a1f2b 55%, #8f2a37 100%)",
       }}
     >
+      {image && (
+        <>
+          <Image src={image} alt={imageAlt} fill priority sizes="100vw" style={{ objectFit: "cover", objectPosition: "center 40%" }} />
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(90deg, rgba(58,10,17,0.94) 0%, rgba(122,31,43,0.82) 42%, rgba(122,31,43,0.35) 100%)",
+            }}
+          />
+        </>
+      )}
       {/* dot grid */}
       <Box
         aria-hidden
@@ -76,7 +96,7 @@ export default function PageHero({
       {/* gold accent line */}
       <Box aria-hidden sx={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 4, bgcolor: "secondary.main" }} />
       {/* page icon */}
-      <Box
+      {!image && (<Box
         aria-hidden
         sx={{
           position: "absolute",
@@ -88,7 +108,7 @@ export default function PageHero({
         }}
       >
         <Icon sx={{ fontSize: { xs: 160, md: 240 } }} />
-      </Box>
+      </Box>)}
       <Container maxWidth="lg" sx={{ position: "relative" }}>
         <Typography variant="h3" component="h1" fontWeight={700} gutterBottom sx={{ fontSize: { xs: "2rem", md: "3rem" }, maxWidth: 900 }}>
           {title}

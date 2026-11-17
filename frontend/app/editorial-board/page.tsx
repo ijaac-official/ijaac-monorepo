@@ -7,7 +7,8 @@ import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import { listEditorialBoard } from "@ijaac/data-store";
 import type { EditorialBoardMember } from "@ijaac/shared";
-import PersonCard from "@/components/PersonCard";
+import BoardMemberCard from "@/components/BoardMemberCard";
+import Box from "@mui/material/Box";
 import PageHero from "@/components/PageHero";
 import MotionCard from "@/components/MotionCard";
 
@@ -26,10 +27,18 @@ const ROLE_LABELS: Record<string, string> = {
   ADVISORY_BOARD: "Advisory Board",
 };
 
-/** "Professor & Head, Department of Advanced Computing, Sage University, Indore" */
-function positionLine(m: EditorialBoardMember): string | undefined {
-  const parts = [m.designation, m.department, m.affiliation].map((p) => p?.trim()).filter(Boolean) as string[];
-  return parts.length ? parts.join(", ") : undefined;
+function SectionTitle({ label, count }: { label: string; count: number }) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
+      <Box aria-hidden sx={{ width: 28, height: 3, bgcolor: "secondary.main", flexShrink: 0 }} />
+      <Typography variant="h5" component="h2" fontWeight={700}>
+        {label}
+      </Typography>
+      <Typography component="span" variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        ({count})
+      </Typography>
+    </Box>
+  );
 }
 
 async function EditorialBoardContent() {
@@ -40,46 +49,32 @@ async function EditorialBoardContent() {
   }, {});
 
   return (
-    <>
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        {Object.entries(ROLE_LABELS).map(([role, label]) =>
-          grouped[role]?.length ? (
-            <Grid container spacing={3} sx={{ mb: 5 }} key={role}>
-              <Grid item xs={12}>
-                <Typography variant="h5" fontWeight={600} gutterBottom>
-                  {label}
-                </Typography>
-              </Grid>
-              {grouped[role].map((m, i) => (
-                <Grid item xs={12} sm={6} md={4} key={m.id}>
+    <Container maxWidth="lg" sx={{ py: { xs: 5, md: 7 } }}>
+      {Object.entries(ROLE_LABELS).map(([role, label]) => {
+        const list = grouped[role];
+        if (!list?.length) return null;
+        const featured = role === "EDITOR_IN_CHIEF";
+        return (
+          <Box component="section" key={role} sx={{ mb: { xs: 5, md: 6 } }}>
+            <SectionTitle label={label} count={list.length} />
+            <Grid container spacing={3}>
+              {list.map((m, i) => (
+                <Grid item xs={12} sm={featured ? 12 : 6} md={featured ? 12 : 4} key={m.id}>
                   <MotionCard delay={(i % 3) * 0.08}>
-                    <PersonCard
-                      name={m.name}
-                      designation={m.affiliation}
-                      photoUrl={m.photoUrl}
-                      linkedinUrl={m.linkedinUrl}
-                      lines={[
-                        positionLine(m),
-                        m.qualification,
-                        m.specialization ? `Specialization: ${m.specialization}` : undefined,
-                        m.qualificationInstitution,
-                      ]}
-                      href={`/editorial-board/${encodeURIComponent(m.id)}`}
-                      linkLabel="See Detailed Profile"
-                    />
+                    <BoardMemberCard member={m} featured={featured} />
                   </MotionCard>
                 </Grid>
               ))}
             </Grid>
-          ) : null
-        )}
-        {members.length === 0 && (
-          <Typography color="text.secondary">
-            Editorial board information will be published here shortly.
-          </Typography>
-        )}
-      </Container>
-    </>
+          </Box>
+        );
+      })}
+      {members.length === 0 && (
+        <Typography color="text.secondary">
+          Editorial board information will be published here shortly.
+        </Typography>
+      )}
+    </Container>
   );
 }
 
@@ -92,6 +87,7 @@ export default function EditorialBoardPage() {
         title="Editorial Board"
         subtitle="Meet the editors and board members who guide the journal's academic standards."
         icon="board"
+        image="/stock/editorial-review.jpg"
       />
       <Suspense fallback={<CardGridSkeleton bare count={6} />}>
         <EditorialBoardContent />

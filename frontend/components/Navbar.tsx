@@ -26,6 +26,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
@@ -64,12 +65,12 @@ const navItemSx = (active: boolean): SxProps<Theme> => ({
 
 const NAV_ENTRIES: NavEntry[] = [
   { label: "Home", href: "/", icon: <HomeOutlinedIcon fontSize="small" /> },
+  { label: "Editorial Board", href: "/editorial-board", icon: <Groups2OutlinedIcon fontSize="small" /> },
   {
     label: "About",
     icon: <InfoOutlinedIcon fontSize="small" />,
     children: [
       { label: "About the Journal", href: "/about" },
-      { label: "Editorial Board", href: "/editorial-board" },
       { label: "Reviewers", href: "/reviewers" },
       { label: "Become a Reviewer", href: "/become-a-reviewer" },
       { label: "Author Guidelines", href: "/author-guidelines" },

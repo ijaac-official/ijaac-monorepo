@@ -21,6 +21,7 @@ import {
   getSiteStats,
   listPublicationsForMonth,
   listPublicPapers,
+  listEditorialBoard,
   listReviewers,
 } from "@ijaac/data-store";
 import type { Issue } from "@ijaac/shared";
@@ -31,6 +32,7 @@ import Marquee from "@/components/Marquee";
 import PaperCard from "@/components/PaperCard";
 import StatsCounters, { type StatItem } from "@/components/StatsCounters";
 import IssueCover from "@/components/IssueCover";
+import BoardMemberCard from "@/components/BoardMemberCard";
 import JsonLd from "@/components/JsonLd";
 import ProseText from "@/components/ProseText";
 import { JUSTIFIED_SX } from "@/lib/text";
@@ -256,6 +258,65 @@ async function HomeData() {
   );
 }
 
+const BOARD_ORDER = ["EDITOR_IN_CHIEF", "ASSOCIATE_EDITOR", "MEMBER", "ADVISORY_BOARD"];
+
+async function HomeEditorialBoard() {
+  const members = await listEditorialBoard({ activeOnly: true }).catch(() => []);
+  if (members.length === 0) return null;
+  const sorted = [...members].sort((a, b) => BOARD_ORDER.indexOf(a.role) - BOARD_ORDER.indexOf(b.role));
+  const chief = sorted.find((m) => m.role === "EDITOR_IN_CHIEF");
+  const others = sorted.filter((m) => m !== chief).slice(0, 6);
+
+  return (
+    <Box component="section" aria-labelledby="board-heading" sx={{ bgcolor: "background.paper", py: { xs: 6, md: 8 } }}>
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "flex-start", sm: "flex-end" },
+            justifyContent: "space-between",
+            gap: 2,
+            mb: 3.5,
+          }}
+        >
+          <Box>
+            <Typography variant="overline" color="secondary.dark" fontWeight={700}>
+              Editorial Board
+            </Typography>
+            <Typography id="board-heading" variant="h4" component="h2" fontWeight={700} sx={{ mt: 0.5 }}>
+              The Editors Behind IJAAC
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: "62ch" }}>
+              Academics from leading Indian universities and institutes who oversee peer review and
+              uphold the journal&apos;s editorial standards.
+            </Typography>
+          </Box>
+          <Button component={Link} href="/editorial-board" variant="outlined" sx={{ flexShrink: 0 }}>
+            View Full Board -&gt;
+          </Button>
+        </Box>
+        <Grid container spacing={3}>
+          {chief && (
+            <Grid item xs={12}>
+              <MotionCard>
+                <BoardMemberCard member={chief} featured />
+              </MotionCard>
+            </Grid>
+          )}
+          {others.map((m, i) => (
+            <Grid item xs={12} sm={6} md={4} key={m.id}>
+              <MotionCard delay={(i % 3) * 0.08}>
+                <BoardMemberCard member={m} />
+              </MotionCard>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+    </Box>
+  );
+}
+
 function HomeDataSkeleton() {
   return (
     <Box aria-busy="true" aria-label="Loading latest publications">
@@ -321,7 +382,11 @@ export default function HomePage() {
         <HomeData />
       </Suspense>
 
-      <Box sx={{ bgcolor: "background.paper", py: 7 }}>
+      <Suspense fallback={null}>
+        <HomeEditorialBoard />
+      </Suspense>
+
+      <Box sx={{ bgcolor: "background.default", py: 7 }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             {FEATURES.map((item, i) => (
@@ -348,7 +413,7 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      <Box component="section" aria-labelledby="scope-heading" sx={{ bgcolor: "background.default", py: 6 }}>
+      <Box component="section" aria-labelledby="scope-heading" sx={{ bgcolor: "background.paper", py: 6 }}>
         <Container maxWidth="lg">
           <SectionHeadingWithId
             id="scope-heading"
