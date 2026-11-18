@@ -4,7 +4,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getIssue, listPublicPapers } from "@ijaac/data-store";
+import { getPublicIssue, listPublicPapers } from "@ijaac/data-store";
 import { cache } from "react";
 import type { Issue, Submission } from "@ijaac/shared";
 import PageHero from "@/components/PageHero";
@@ -20,7 +20,7 @@ function issueTitle(issue: { title?: string; volume: string; number: string }) {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-const loadIssue = cache(async (id: string) => getIssue(id).catch(() => null));
+const loadIssue = cache(async (id: string) => getPublicIssue(id).catch(() => null));
 
 function periodLabel(issue: Issue): string {
   return issue.month && issue.month >= 1 && issue.month <= 12 ? `${MONTHS[issue.month - 1]} ${issue.year}` : String(issue.year);

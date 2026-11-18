@@ -8,7 +8,7 @@ import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import type { Issue } from "@ijaac/shared";
-import { listIssues } from "@ijaac/data-store";
+import { listPublicIssues } from "@ijaac/data-store";
 import PageHero from "@/components/PageHero";
 import IssueCover from "@/components/IssueCover";
 
@@ -36,7 +36,7 @@ function groupByVolume(issues: Issue[]): { key: string; year: number; volume: st
 }
 
 async function ArchivesContent() {
-  const issues = await listIssues().catch(() => []);
+  const issues = await listPublicIssues().catch(() => []);
   const groups = groupByVolume(issues);
 
   return (

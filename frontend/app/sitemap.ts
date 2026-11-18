@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { listIssues, listPublicPapers, listReviewers, listEditorialBoard } from "@ijaac/data-store";
+import { listPublicIssues, listPublicPapers, listReviewers, listEditorialBoard } from "@ijaac/data-store";
 import { SITE_URL } from "@/lib/seo";
 
 export const revalidate = 3600;
@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // listPublicPapers = published AND not hidden, so private papers never leak into the sitemap.
   const [papers, issues, reviewers, editors] = await Promise.all([
     listPublicPapers().catch(() => []),
-    listIssues().catch(() => []),
+    listPublicIssues().catch(() => []),
     listReviewers({ activeOnly: true }).catch(() => []),
     listEditorialBoard({ activeOnly: true }).catch(() => []),
   ]);

@@ -12,7 +12,7 @@ import MuiLink from "@mui/material/Link";
 import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import { cache } from "react";
-import { getIssue, getSubmission } from "@ijaac/data-store";
+import { getPublicIssue, getSubmission } from "@ijaac/data-store";
 import { isPubliclyVisible } from "@ijaac/shared";
 import type { Issue, Submission } from "@ijaac/shared";
 import JsonLd from "@/components/JsonLd";
@@ -43,7 +43,7 @@ const getPublishedPaper = cache(async (id: string) => {
 });
 
 const getPaperIssue = cache(async (issueId?: string) =>
-  issueId ? getIssue(issueId).catch(() => null) : null
+  issueId ? getPublicIssue(issueId).catch(() => null) : null
 );
 
 function publishedIso(paper: Submission): string {

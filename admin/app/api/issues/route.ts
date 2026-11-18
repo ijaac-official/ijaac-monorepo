@@ -13,6 +13,7 @@ const issueInputSchema = z.object({
   coverImageUrl: z.string().url().optional().or(z.literal("")),
   publishDate: z.string().optional(),
   isCurrent: z.boolean().optional(),
+  isHidden: z.boolean().optional(),
 });
 
 export async function GET() {

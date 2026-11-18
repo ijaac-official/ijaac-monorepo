@@ -12,6 +12,7 @@ const issueUpdateSchema = z.object({
   description: z.string().optional(),
   coverImageUrl: z.string().url().optional().or(z.literal("")),
   publishDate: z.string().optional(),
+  isHidden: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

@@ -17,7 +17,7 @@ import Stack from "@mui/material/Stack";
 import type { Metadata } from "next";
 import {
   countCompletedReviews,
-  getCurrentIssue,
+  getPublicCurrentIssue,
   getSiteStats,
   listPublicationsForMonth,
   listPublicPapers,
@@ -123,7 +123,7 @@ function SectionHeadingWithId({ id, title, subtitle }: { id: string; title: stri
 async function HomeData() {
   const [currentIssue, monthlyPublications, publicPapers, reviewers, siteStats, reviewCounts] =
     await Promise.all([
-      getCurrentIssue().catch(() => null),
+      getPublicCurrentIssue().catch(() => null),
       listPublicationsForMonth().catch(() => []),
       listPublicPapers().catch(() => []),
       listReviewers({ activeOnly: true }).catch(() => []),

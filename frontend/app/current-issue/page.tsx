@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import CardGridSkeleton from "@/components/CardGridSkeleton";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import { getCurrentIssue, listPublicPapers } from "@ijaac/data-store";
+import { getPublicCurrentIssue, listPublicPapers } from "@ijaac/data-store";
 import PageHero from "@/components/PageHero";
 import IssueDetailView from "../archives/_components/IssueDetailView";
 
@@ -17,7 +17,7 @@ export const metadata = pageMetadata({
 export const revalidate = 0;
 
 async function CurrentIssueContent() {
-  const issue = await getCurrentIssue().catch(() => null);
+  const issue = await getPublicCurrentIssue().catch(() => null);
   const papers = issue ? await listPublicPapers({ issueId: issue.id }).catch(() => []) : [];
 
   return (

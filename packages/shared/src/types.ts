@@ -136,6 +136,8 @@ export interface Issue {
   coverImageUrl?: string;
   publishDate?: string;
   isCurrent: boolean;
+  /** Hidden issues (and their papers) are not listed on the public site. */
+  isHidden?: boolean;
   createdAt: string;
 }
 

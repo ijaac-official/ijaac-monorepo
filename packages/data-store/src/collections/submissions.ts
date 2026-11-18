@@ -2,6 +2,13 @@ import { randomUUID } from "node:crypto";
 import { isPubliclyVisible } from "@ijaac/shared";
 import type { ReviewAssignment, Submission, SubmissionStatus } from "@ijaac/shared";
 import { readCollection, updateCollection } from "../json-store";
+import { hiddenIssueIds } from "./issues";
+
+/** Public listings skip papers that belong to an issue hidden by the admin. */
+async function publicFilter(): Promise<(s: Submission) => boolean> {
+  const hidden = await hiddenIssueIds().catch(() => new Set<string>());
+  return (s) => isPubliclyVisible(s) && !(s.issueId && hidden.has(s.issueId));
+}
 
 const COLLECTION = "submissions";
 
@@ -77,10 +84,10 @@ export async function listAllSubmissionsRaw(): Promise<Submission[]> {
 
 /** Submissions published within the given month (defaults to the current month). */
 export async function listPublicationsForMonth(reference: Date = new Date()): Promise<Submission[]> {
-  const items = await readCollection<Submission>(COLLECTION);
+  const [items, visible] = await Promise.all([readCollection<Submission>(COLLECTION), publicFilter()]);
   return items
     .filter((s) => {
-      if (!isPubliclyVisible(s) || !s.publishedAt) return false;
+      if (!visible(s) || !s.publishedAt) return false;
       const d = new Date(s.publishedAt);
       return d.getUTCFullYear() === reference.getUTCFullYear() && d.getUTCMonth() === reference.getUTCMonth();
     })
@@ -93,9 +100,9 @@ export async function listPublishedPapersPage(options?: {
   limit?: number;
   query?: string;
 }): Promise<{ items: Submission[]; total: number }> {
-  const items = await readCollection<Submission>(COLLECTION);
+  const [items, visible] = await Promise.all([readCollection<Submission>(COLLECTION), publicFilter()]);
   let published = items
-    .filter((s) => isPubliclyVisible(s))
+    .filter(visible)
     .sort((a, b) => (b.publishedAt ?? b.submittedAt).localeCompare(a.publishedAt ?? a.submittedAt));
 
   if (options?.query?.trim()) {
@@ -115,9 +122,9 @@ export async function isPaymentOrderUsed(orderId: string): Promise<boolean> {
 
 /** Published + public papers, newest first (for issue pages, credentials, etc). */
 export async function listPublicPapers(filter?: { issueId?: string }): Promise<Submission[]> {
-  const items = await readCollection<Submission>(COLLECTION);
+  const [items, visible] = await Promise.all([readCollection<Submission>(COLLECTION), publicFilter()]);
   return items
-    .filter((s) => isPubliclyVisible(s) && (!filter?.issueId || s.issueId === filter.issueId))
+    .filter((s) => visible(s) && (!filter?.issueId || s.issueId === filter.issueId))
     .sort((a, b) => (b.publishedAt ?? b.submittedAt).localeCompare(a.publishedAt ?? a.submittedAt));
 }
 

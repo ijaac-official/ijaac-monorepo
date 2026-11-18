@@ -61,6 +61,29 @@ export async function listIssues(): Promise<Issue[]> {
   return [...items].sort(compareIssuesDesc);
 }
 
+/** Issues shown on the public site (hidden ones removed), newest first. */
+export async function listPublicIssues(): Promise<Issue[]> {
+  return (await listIssues()).filter((i) => !i.isHidden);
+}
+
+/** Ids of issues hidden from the public site. */
+export async function hiddenIssueIds(): Promise<Set<string>> {
+  const items = await readCollection<Issue>(COLLECTION);
+  return new Set(items.filter((i) => i.isHidden).map((i) => i.id));
+}
+
+/** The current issue, unless it is hidden from public view. */
+export async function getPublicCurrentIssue(): Promise<Issue | null> {
+  const current = await getCurrentIssue();
+  return current && !current.isHidden ? current : null;
+}
+
+/** An issue by id, or null when it does not exist or is hidden. */
+export async function getPublicIssue(id: string): Promise<Issue | null> {
+  const issue = await getIssue(id);
+  return issue && !issue.isHidden ? issue : null;
+}
+
 export async function getCurrentIssue(): Promise<Issue | null> {
   const items = await readCollection<Issue>(COLLECTION);
   return items.find((i) => i.isCurrent) ?? null;

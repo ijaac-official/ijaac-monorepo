@@ -25,6 +25,7 @@ import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import Alert from "@mui/material/Alert";
 import Tooltip from "@mui/material/Tooltip";
+import Switch from "@mui/material/Switch";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import AddIcon from "@mui/icons-material/Add";
@@ -71,8 +72,9 @@ type FormState = {
   month: string;
   volume: string;
   volumeOverridden: boolean;
-  /** Only editable for legacy (non-monthly) issues */
+  /** Defaults to the month; can be set to any value (e.g. a running issue count). */
   number: string;
+  numberEdited: boolean;
   title: string;
   titleEdited: boolean;
   publishDate: string;
@@ -97,6 +99,7 @@ function emptyForm(issues: Issue[]): FormState {
     volume: autoVolume(year, issues),
     volumeOverridden: false,
     number: String(month),
+    numberEdited: false,
     title: `${MONTHS[month - 1]} ${year}`,
     titleEdited: false,
     publishDate: firstOfMonth(year, month),
@@ -114,7 +117,7 @@ function withDerived(form: FormState, issues: Issue[]): FormState {
   const next = { ...form };
   if (!next.volumeOverridden) next.volume = autoVolume(year, issues);
   if (month >= 1 && month <= 12) {
-    next.number = String(month);
+    if (!next.numberEdited) next.number = String(month);
     if (!next.titleEdited) next.title = `${MONTHS[month - 1]} ${year}`;
     if (!next.publishDateEdited) next.publishDate = firstOfMonth(year, month);
   }
@@ -165,6 +168,7 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
       volume: issue.volume,
       volumeOverridden: true,
       number: issue.number,
+      numberEdited: true,
       title: issue.title ?? "",
       titleEdited: true,
       publishDate: issue.publishDate ? issue.publishDate.slice(0, 10) : "",
@@ -186,8 +190,8 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
       enqueueSnackbar("Volume is required", { variant: "error" });
       return;
     }
-    if (!month && !form.number.trim()) {
-      enqueueSnackbar("Pick a month or enter an issue number", { variant: "error" });
+    if (!form.number.trim()) {
+      enqueueSnackbar("Enter an issue number", { variant: "error" });
       return;
     }
     if (duplicate) {
@@ -200,7 +204,7 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
       year,
       month,
       volume: form.volume.trim(),
-      number: month ? String(month) : form.number.trim(),
+      number: form.number.trim(),
       title: form.title.trim() || undefined,
       description: form.description.trim() || undefined,
       coverImageUrl: form.coverImageUrl || (form.id ? "" : undefined),
@@ -234,6 +238,32 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
       router.refresh();
     } catch {
       enqueueSnackbar("Could not set current issue", { variant: "error" });
+    }
+  };
+
+  const [togglingId, setTogglingId] = React.useState<string | null>(null);
+
+  const setHidden = async (issue: Issue, hidden: boolean) => {
+    setTogglingId(issue.id);
+    try {
+      const res = await fetch(`/api/issues/${issue.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isHidden: hidden }),
+      });
+      if (!res.ok) throw new Error();
+      const label = issue.title ?? `Vol. ${issue.volume}, Issue ${issue.number}`;
+      enqueueSnackbar(
+        hidden
+          ? `${label} is now hidden from the public site${issue.isCurrent ? " (it is the current issue, so the Current Issue page will be empty)" : ""}`
+          : `${label} is now visible on the public site`,
+        { variant: hidden && issue.isCurrent ? "warning" : "success" }
+      );
+      router.refresh();
+    } catch {
+      enqueueSnackbar("Could not change visibility", { variant: "error" });
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -318,6 +348,7 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
                 <TableCell>Month</TableCell>
                 <TableCell>Year</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Public</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -352,7 +383,21 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
                     <TableCell>{m ? MONTHS[m - 1] : "-"}</TableCell>
                     <TableCell>{issue.year}</TableCell>
                     <TableCell>
-                      {issue.isCurrent && <Chip label="Current" color="primary" size="small" />}
+                      <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
+                        {issue.isCurrent && <Chip label="Current" color="primary" size="small" />}
+                        {issue.isHidden && <Chip label="Hidden" size="small" variant="outlined" color="warning" />}
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title={issue.isHidden ? "Hidden from the public site - click to show" : "Visible on the public site - click to hide"}>
+                        <Switch
+                          size="small"
+                          checked={!issue.isHidden}
+                          disabled={togglingId === issue.id}
+                          onChange={(e) => setHidden(issue, !e.target.checked)}
+                          inputProps={{ "aria-label": issue.isHidden ? "Show issue publicly" : "Hide issue from public" }}
+                        />
+                      </Tooltip>
                     </TableCell>
                     <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                       <IconButton size="small" aria-label="Edit issue" onClick={() => openEdit(issue)}>
@@ -435,10 +480,21 @@ export default function IssuesManager({ initialIssues }: { initialIssues: Issue[
               />
               <TextField
                 label="Issue Number"
-                value={form.month ? form.month : form.number}
-                onChange={(e) => update({ number: e.target.value })}
-                disabled={!!form.month}
-                helperText={form.month ? "Same as month" : "Legacy issue number"}
+                value={form.number}
+                onChange={(e) => update({ number: e.target.value, numberEdited: true })}
+                helperText={
+                  form.month && form.number !== form.month ? (
+                    <Box
+                      component="span"
+                      sx={{ cursor: "pointer", textDecoration: "underline" }}
+                      onClick={() => update({ number: form.month, numberEdited: false })}
+                    >
+                      Reset to month number ({form.month})
+                    </Box>
+                  ) : (
+                    "Shown as \"Issue N\" on the site"
+                  )
+                }
                 fullWidth
               />
             </Stack>
